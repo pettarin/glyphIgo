@@ -452,6 +452,7 @@ $ python glyphIgo.py -e ebook.epub -v -s
 
 ```
 $ python glyphIgo.py -e ebook.epub -v -s -u
+
 [INFO] Reading characters appearing in 'ebook.epub'...
 [INFO] Reading characters appearing in 'ebook.epub'... Done
 [INFO] Creating 'ebook.epub.epub'...
@@ -578,6 +579,7 @@ $ python glyphIgo.py -f font.otf -e ebook.epub -v
 
 ```
 $ python glyphIgo.py -f font.otf -e ebook.epub -v -u
+
 [INFO] Reading glyphs contained in 'font.otf'...
 [INFO] Reading glyphs contained in 'font.otf'... Done
 [INFO] Creating 'font.otf.epub'...
@@ -673,6 +675,7 @@ $ python glyphIgo.py -f font.ttf -e ebook2.epub -v -s
 
 ```
 $ python glyphIgo.py -f font.ttf -e ebook2.epub -v -s -u
+
 [INFO] Reading glyphs contained in 'font.ttf'...
 [INFO] Reading glyphs contained in 'font.ttf'... Done
 [INFO] Creating 'font.ttf.epub'...
@@ -1157,6 +1160,7 @@ $ python glyphIgo.py -p page.xhtml -v -s --preserve
 
 ```
 $ python glyphIgo.py -l INTERROBANG
+
 [INFO] Lookup results for query 'INTERROBANG'
 [INFO] Matched Unicode character '‽'
 Name          INTERROBANG
@@ -1179,6 +1183,7 @@ NFD           ‽
 
 ```
 $ python glyphIgo.py -l "LATIN CAPITAL LETTER A WITH MACRON"
+
 [INFO] Lookup results for query 'LATIN CAPITAL LETTER A WITH MACRON'
 [INFO] Matched Unicode character 'Ā'
 Name          LATIN CAPITAL LETTER A WITH MACRON
@@ -1201,6 +1206,7 @@ NFD           Ā
 
 ```
 $ python glyphIgo.py -l a
+
 [INFO] Lookup results for query 'a'
 [INFO] Matched Unicode character 'a'
 Name          LATIN SMALL LETTER A
@@ -1223,6 +1229,7 @@ NFD           a
 
 ```
 $ python glyphIgo.py -l d97
+
 [INFO] Lookup results for query 'a'
 [INFO] Matched Unicode character 'a'
 Name          LATIN SMALL LETTER A
@@ -1245,6 +1252,7 @@ NFD           a
 
 ```
 $ python glyphIgo.py -l x61
+
 [INFO] Lookup results for query 'a'
 [INFO] Matched Unicode character 'a'
 Name          LATIN SMALL LETTER A
@@ -1267,6 +1275,7 @@ NFD           a
 
 ```
 $ python glyphIgo.py -e ebook.epub -c
+
 [INFO] Reading characters appearing in 'ebook.epub'...
 [INFO] Reading characters appearing in 'ebook.epub'... Done
 [INFO] Number of characters appearing in 'ebook.epub'...
@@ -1280,6 +1289,7 @@ $ python glyphIgo.py -e ebook.epub -c
 
 ```
 $ python glyphIgo.py -L "GREEK OMEGA OXIA"
+
 [INFO] Lookup results for query 'GREEK OMEGA OXIA'
 [INFO] Matched Unicode character 'ὤ'
 Name          GREEK SMALL LETTER OMEGA WITH PSILI AND OXIA
@@ -1432,6 +1442,7 @@ NFD           Ώ
 
 ```
 $ python glyphIgo.py -d "RAIN"
+
 ⛆ RAIN (U+26C6)
 ```
 
@@ -1441,6 +1452,7 @@ $ python glyphIgo.py -d "RAIN"
 
 ```
 $ python glyphIgo.py -D "RAIN"
+
 ☔ UMBRELLA WITH RAIN DROPS (U+2614)
 ⛆ RAIN (U+26C6)
 ⛈ THUNDER CLOUD AND RAIN (U+26C8)
