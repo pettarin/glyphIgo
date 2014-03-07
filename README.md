@@ -16,14 +16,14 @@
 
 There are eight main usage scenarios:
 
-* list all Unicode characters used in an EPUB file or a plain text UTF-8 file,
-* list all Unicode glyphs present in a TTF/OTF/WOFF font file,
-* check whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file,
-* minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file,
-* convert a font file from/to TTF/OTF/WOFF format,
-* export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
-* lookup for information about a given Unicode character, including fuzzy name matching, and
-* count the number of characters in an EPUB file or a plain text UTF-8 file.
+1. list all Unicode characters used in an EPUB file or a plain text UTF-8 file,
+2. list all Unicode glyphs present in a TTF/OTF/WOFF font file,
+3. check whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file,
+4. minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file,
+5. convert a font file from/to TTF/OTF/WOFF format,
+6. export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
+7. lookup for information about a given Unicode character, including fuzzy name matching, and
+8. count the number of characters in an EPUB file or a plain text UTF-8 file.
 
 The syntax is the following:
 
@@ -107,7 +107,7 @@ Exit codes:
      $ python glyphIgo.py -L "GREEK OMEGA OXIA"
 ```
 
-Please see the Wiki for usage examples with their actual output.
+Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
 
 
 
