@@ -130,7 +130,7 @@ Previous versions, hosted in a Google Code repo, were released under the GNU GPL
 For the sake of speed and code clarity, the given EPUB is not "fully parsed".
 In particular:
 
-* the list of Unicode characters is extracted by inspecting all files inside the ZIP archive whose lowercased name ends in `xhtml`, `html`, and `xml` (except `container.xml`, which is skipped), and
+* the list of Unicode characters is extracted by inspecting all files inside the ZIP archive whose lowercased name ends in `xhtml`, `html`, and `xml` (except those in `META-INF/`, which are skipped), and
 * the book pages are not parsed (e.g., a Unicode character appearing inside a comment will be accounted for).
 
 Please observe that these approximations err on the "conservative" side, possibly generating "false-positives" but never generating "false-negatives".
