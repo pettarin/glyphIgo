@@ -2,7 +2,7 @@
 
 ## Summary
 
-glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks
+**glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
 * Version: 2.0
 * Date: 2014-03-07
@@ -14,7 +14,7 @@ There are eight main usage scenarios:
 * List all Unicode characters used in an EPUB file or a plain text UTF-8 file.
 * List all Unicode glyphs present in a TTF/OTF/WOFF font file.
 * Check whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file.
-* Minimize a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file.
+* Minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file.
 * Convert a font file from/to TTF/OTF/WOFF format.
 * Export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader.
 * Lookup for information about a given Unicode character, including fuzzy name matching.
@@ -101,42 +101,44 @@ Examples:
 ```
 
 
-Please see the [http://code.google.com/p/glyphigo/wiki/UsageExamples Wiki] for usage examples with their output on test eBook and font files.
+Please see the Wiki for usage examples with their output on test eBook and font files.
 
 
 
 ## License
 
-glyphIgo is released under the MIT License since 2014-03-07.
+**glyphIgo** is released under the MIT License since version 2.0.0 (2014-03-07).
 
-Previously, it was released under the GNU GPL 3 License, and hosted at Google Code.
+Previous versions, hosted in a Google Code repo, were released under the GNU GPL 3 License.
 
 
 
 ## Technical Notes
 
-glyphIgo requires Python 2.7, and Python modules `python-fontforge`, `python-htmlentitydefs`, and `python-unicodedata`.
+**glyphIgo** requires Python 2.7 (or later Python 2.x), and Python modules `python-fontforge`, `python-htmlentitydefs`, and `python-unicodedata`.
 
 For the sake of speed and code clarity, the given EPUB is not "fully parsed".
 In particular:
 
-* the list of Unicode characters is extracted by inspecting all files inside the ZIP archive whose lowercased name ends in `xhtml`, `html`, and `xml` (except `container.xml` which is skipped), and
+* the list of Unicode characters is extracted by inspecting all files inside the ZIP archive whose lowercased name ends in `xhtml`, `html`, and `xml` (except `container.xml`, which is skipped), and
 * the book pages are not parsed (e.g., a Unicode character appearing inside a comment will be accounted for).
+
 Please observe that these approximations err on the "conservative" side, possibly generating "false-positives" but never generating "false-negatives".
 
-You can also pass a ZIP archive, containing XHTML/HTML/XML pages, using the `-e` switch.
+You can also pass a ZIP archive, containing several XHTML/HTML/XML pages, using the `-e` switch.
 
 Conversion from entity (named or not) to Unicode codepoint is supported.
 
-Unfortunately, there is no `python-fontforge` module for Python 3, so you must use Python 2.7 to run glyphIgo. In the source code I have already marked the changes required to port glyphIgo to Python 3.
+Unfortunately, there is no `python-fontforge` module for Python 3 in the stable Debian repo (as of 2014-03-07), so you must use Python 2.7 (or later Python 2.x) to run **glyphIgo**. In the source code I have already marked the changes required to port **glyphIgo** to Python 3.
 
-To use `-u` or `--epub` switch, you need to download genEPUB.py and put it into the same directory of glyphIgo.py.
+To use `-u` or `--epub` switch, you need to download `genEPUB.py` and put it into the same directory of `glyphIgo.py`.
 
 
 
 ## Main missing features
 
-* Let the user specify the source file encoding. (Now glyphIgo assumes all files are encoded in UTF-8.)
+* Let the user specify the source file encoding. (Now **glyphIgo** assumes all files are encoded in UTF-8.)
 * Support for Unicode modifiers.
 * Full EPUB parsing.
 * Font obfuscation.
+
