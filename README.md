@@ -6,9 +6,9 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 2.0
+* Version: 2.0.0
 * Date: 2014-03-07
-* Developer: Alberto Pettarin, aka `@acutebit` [Web site](http://www.albertopettarin.it/) [contact](http://www.albertopettarin.it/contact.html)
+* Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact\]](http://www.albertopettarin.it/contact.html))
 
 
 
@@ -16,14 +16,14 @@
 
 There are eight main usage scenarios:
 
-* List all Unicode characters used in an EPUB file or a plain text UTF-8 file,
-* List all Unicode glyphs present in a TTF/OTF/WOFF font file,
-* Check whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file,
-* Minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file,
-* Convert a font file from/to TTF/OTF/WOFF format,
-* Export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
-* Lookup for information about a given Unicode character, including fuzzy name matching, and
-* Count the number of characters in an EPUB file or a plain text UTF-8 file.
+* list all Unicode characters used in an EPUB file or a plain text UTF-8 file,
+* list all Unicode glyphs present in a TTF/OTF/WOFF font file,
+* check whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file,
+* minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file,
+* convert a font file from/to TTF/OTF/WOFF format,
+* export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
+* lookup for information about a given Unicode character, including fuzzy name matching, and
+* count the number of characters in an EPUB file or a plain text UTF-8 file.
 
 The syntax is the following:
 
@@ -127,7 +127,7 @@ Previous versions, hosted in a Google Code repo, were released under the GNU GPL
 * `python-htmlentitydefs`, and
 * `python-unicodedata`.
 
-For the sake of speed (**glyphIgo** was intially coded for checking near 100,000 EPUB files at once) and code clarity, the given EPUB is not "fully parsed".
+For the sake of speed and code clarity, the given EPUB is not "fully parsed".
 In particular:
 
 * the list of Unicode characters is extracted by inspecting all files inside the ZIP archive whose lowercased name ends in `xhtml`, `html`, and `xml` (except `container.xml`, which is skipped), and
@@ -154,3 +154,16 @@ To use `-u` or `--epub` switch, you also need to download `genEPUB.py` and put i
 * Full EPUB parsing
 * Font obfuscation
 
+
+
+## Trivia
+
+### What does "glyphIgo" mean?
+
+Most people think that `glyphIgo = "glyph I go"`.
+
+Instead, the name comes from `glyph` and `figo` (Italian slang for `cool`).
+
+### Why did you code glyphIgo?
+
+I needed to perform the "font checking" on nearly 100,000 EPUB files at once, for a large project. Then, I felt bad having this little piece of code sitting idly, so I decided to publish it on Google Code. In March 2014, I moved it to GitHub.
