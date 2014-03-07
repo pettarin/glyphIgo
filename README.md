@@ -4,7 +4,8 @@
 
 glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-
+* Version: 2.0
+* Date: 2014-03-07
 
 ## Usage
 
