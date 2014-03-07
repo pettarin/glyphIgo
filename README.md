@@ -8,7 +8,7 @@
 
 * Version: 2.0.0
 * Date: 2014-03-07
-* Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact\]](http://www.albertopettarin.it/contact.html))
+* Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 
 
 
