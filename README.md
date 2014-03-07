@@ -1,9 +1,5 @@
 # glyphIgo
 
-
-
-## Summary
-
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
 * Version: 2.0.0
