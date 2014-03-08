@@ -3,12 +3,13 @@
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v2.0.0'
-__date__        = '2014-03-07'
+__version__     = 'v2.0.1'
+__date__        = '2014-03-08'
 __description__ = 'genEPUB creates an EPUB eBook from a list of Unicode characters'
 
 ### BEGIN changelog ###
 #
+# 2.0.1 2014-03-08 Fixed missing newlines in generated index.xhtml
 # 2.0.0 2014-03-07 Moved to GitHub, released under MIT license
 # 1.02  2013-03-16 Fixed usage message, added sort
 # 1.01  2013-03-15 Initial release
@@ -74,21 +75,21 @@ class genEPUB:
         os.makedirs(tmpDir)
 
         # create META-INF directory
-        metaInfDir = tmpDir + "/META-INF"
+        metaInfDir = os.path.join(tmpDir, "META-INF")
         os.makedirs(metaInfDir)
 
         # create new mimetype file
-        mimetypeFile = tmpDir + "/mimetype"
+        mimetypeFile = os.path.join(tmpDir, "mimetype")
         f = open(mimetypeFile, "w")
         f.write("application/epub+zip")
         f.close()
 
         # container file
         contentFileRelative = "content.opf"
-        contentFile = tmpDir + "/" + contentFileRelative
+        contentFile = os.path.join(tmpDir, contentFileRelative)
 
         # create new container.xml file
-        containerFile = metaInfDir + "/container.xml"
+        containerFile = os.path.join(metaInfDir, "container.xml")
         f = open(containerFile, "w") 
         f.write("<?xml version=\"1.0\"?>\n")
         f.write("<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n")
@@ -99,7 +100,7 @@ class genEPUB:
         f.close()
 
         # create new style.css file
-        styleFile = tmpDir + "/style.css"
+        styleFile = os.path.join(tmpDir, "style.css")
         f = open(styleFile, "w")
         f.write("@charset \"UTF-8\";\n")
         f.write("body {\n")
@@ -190,13 +191,13 @@ class genEPUB:
     # zipEPUB(self, filename, tmpDir) 
     # zips directory into filename
     def zipEPUB(self, filename, tmpDir):
-        tmpDir = tmpDir + '/'
+        # tmpDir = tmpDir + '/'
         fileEPUB = zipfile.ZipFile(filename, 'w')
-        fileEPUB.write(tmpDir + 'mimetype', 'mimetype', zipfile.ZIP_STORED)
+        fileEPUB.write(os.path.join(tmpDir, 'mimetype'), 'mimetype', zipfile.ZIP_STORED)
 
         structure = [ "META-INF/container.xml", "content.opf", "toc.ncx", "style.css", "index.xhtml" ]
         for f in structure:
-            fileEPUB.write(tmpDir + f, f, zipfile.ZIP_DEFLATED)
+            fileEPUB.write(os.path.join(tmpDir, f), f, zipfile.ZIP_DEFLATED)
 
         fileEPUB.close()
     ### END zipEPUB ###
@@ -236,36 +237,36 @@ class genEPUB:
 
         # output char table
         sOUT += "   <table class=\"character\">\n"
-        sOUT += "    <tr class=\"character\">"
-        sOUT += "     <th class=\"sym\">%s</th>" % ("Sym")
-        sOUT += "     <th class=\"dec\">%s</th>" % ("Dec")
-        sOUT += "     <th class=\"hex\">%s</th>" % ("Hex")
-        sOUT += "     <th class=\"nam\">%s</th>" % ("Unicode name")
-        sOUT += "    </tr>"
+        sOUT += "    <tr class=\"character\">\n"
+        sOUT += "     <th class=\"sym\">%s</th>\n" % ("Sym")
+        sOUT += "     <th class=\"dec\">%s</th>\n" % ("Dec")
+        sOUT += "     <th class=\"hex\">%s</th>\n" % ("Hex")
+        sOUT += "     <th class=\"nam\">%s</th>\n" % ("Unicode name")
+        sOUT += "    </tr>\n"
         for c in characters:
-            sOUT += "    <tr class=\"character\">"
+            sOUT += "    <tr class=\"character\">\n"
             
             # skip control characters
             if (c < 32):
-                sOUT += "     <td class=\"sym\">%s</td>" % ("")
-                sOUT += "     <td class=\"dec\">%s</td>" % (str(c))
-                sOUT += "     <td class=\"hex\">%s</td>" % (str(hex(c)))
-                sOUT += "     <td class=\"nam\">%s</td>" % (self.CONTROL_CHARATERS[c])
+                sOUT += "     <td class=\"sym\">%s</td>\n" % ("")
+                sOUT += "     <td class=\"dec\">%s</td>\n" % (str(c))
+                sOUT += "     <td class=\"hex\">%s</td>\n" % (str(hex(c)))
+                sOUT += "     <td class=\"nam\">%s</td>\n" % (self.CONTROL_CHARATERS[c])
             else:
-                sOUT += "     <td class=\"sym\">%s</td>" % (self.escape(unichr(c)))
-                sOUT += "     <td class=\"dec\">%s</td>" % (str(c))
-                sOUT += "     <td class=\"hex\">%s</td>" % (str(hex(c)))
-                sOUT += "     <td class=\"nam\">%s</td>" % (unicodedata.name(unichr(c), "UNKNOWN NAME"))
+                sOUT += "     <td class=\"sym\">%s</td>\n" % (self.escape(unichr(c)))
+                sOUT += "     <td class=\"dec\">%s</td>\n" % (str(c))
+                sOUT += "     <td class=\"hex\">%s</td>\n" % (str(hex(c)))
+                sOUT += "     <td class=\"nam\">%s</td>\n" % (unicodedata.name(unichr(c), "UNKNOWN NAME"))
             
-            sOUT += "    </tr>"
-        sOUT += "   </table>"
+            sOUT += "    </tr>\n"
+        sOUT += "   </table>\n"
 
         sOUT += " </body>\n"
-        sOUT += "</html>\n"
+        sOUT += "</html>"
 
         sOUT = sOUT.encode("utf-8")
 
-        fileOUT = open(tmpDir + "/index.xhtml", 'w')
+        fileOUT = open(os.path.join(tmpDir, "index.xhtml"), 'w')
         fileOUT.write(sOUT)
         fileOUT.close()
     ### END outputIndexPage ###
@@ -308,11 +309,11 @@ class genEPUB:
             sOUT += " </navPoint>\n"
         
         sOUT += " </navMap>\n"
-        sOUT += "</ncx>\n"
+        sOUT += "</ncx>"
              
         sOUT = sOUT.encode("utf-8")
         
-        fileOUT = open(tmpDir + "/toc.ncx", 'w')
+        fileOUT = open(os.path.join(tmpDir, "toc.ncx"), 'w')
         fileOUT.write(sOUT)
         fileOUT.close()
     ### END createTOC ###
@@ -329,7 +330,7 @@ class genEPUB:
         sOUT += "  <dc:language>en</dc:language>\n"
         sOUT += "  <dc:title>%s</dc:title>\n" % (self.escape(title))
         sOUT += "  <dc:creator opf:role=\"aut\">genEPUB.py</dc:creator>\n"
-        sOUT += "  <dc:date opf:event=\"creation\">2013-03-14</dc:date>\n"
+        sOUT += "  <dc:date opf:event=\"creation\">2014-03-08</dc:date>\n"
         sOUT += "  <dc:identifier id=\"uuid_id\" opf:scheme=\"uuid\">%s</dc:identifier>\n" % (identifier)
         sOUT += " </metadata>\n"
 
@@ -337,16 +338,16 @@ class genEPUB:
         sOUT += "  <item href=\"style.css\" id=\"css\" media-type=\"text/css\" />\n"
         sOUT += "  <item href=\"toc.ncx\" id=\"ncx\" media-type=\"application/x-dtbncx+xml\" />\n"
         sOUT += "  <item href=\"index.xhtml\" id=\"index.xhtml\" media-type=\"application/xhtml+xml\" />\n"
-        sOUT += " </manifest>" + '\n'
+        sOUT += " </manifest>\n"
         
-        sOUT += " <spine toc=\"ncx\">" + '\n'
+        sOUT += " <spine toc=\"ncx\">\n"
         sOUT += "  <itemref idref=\"index.xhtml\" />\n"
-        sOUT += " </spine>" + '\n'
-        sOUT += "</package>" + '\n'
+        sOUT += " </spine>\n"
+        sOUT += "</package>"
 
         sOUT = sOUT.encode("utf-8")
 
-        fileOUT = open(tmpDir + "/content.opf", 'w')
+        fileOUT = open(os.path.join(tmpDir, "content.opf"), 'w')
         fileOUT.write(sOUT)
         fileOUT.close()
     ### END outputOpf ###

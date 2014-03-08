@@ -2,8 +2,8 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 2.0.0
-* Date: 2014-03-07
+* Version: 2.0.1
+* Date: 2014-03-08
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 
 
@@ -133,7 +133,7 @@ Please observe that these approximations err on the "conservative" side, possibl
 
 You can also pass a ZIP archive, containing several XHTML/HTML/XML pages, using the `-e` switch.
 
-**glyphIgo** assumes all files are encoded in UTF-8.
+**glyphIgo** assumes that all files are encoded in UTF-8.
 
 Conversion from entity (named or not) to Unicode codepoint is supported.
 

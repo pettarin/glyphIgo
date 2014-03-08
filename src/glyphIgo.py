@@ -4,13 +4,14 @@
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v2.0.0'
-__date__        = '2014-03-07'
+__version__     = 'v2.0.1'
+__date__        = '2014-03-08'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 2.0.1 2014-03-08 Minor code cleanup
 # 2.0.0 2014-03-07 Moved to GitHub, released under MIT license
 # 1.21  2014-02-16 Added discover function (-d and -D)
 # 1.20  2013-08-04 Added fuzzy Unicode name match
@@ -446,7 +447,7 @@ def output_epub(dec_codepoint_list, title, epub_filename):
 ### BEGIN get_dec_list ###
 # get_dec_list(gen_list, has_frequencies)
 # returns a list of decimal codepoints
-# if has_frequencies = True, the list is a list of tuples [['c', 11] ... ]
+# if has_frequencies = True, the list is a list of tuples [ ['c', 11], ['d', 12], ... ]
 # if has_frequencies = False, the list is a list of chars [ 'a', 'b', ... ]
 def get_dec_list(gen_list, has_frequencies):
     dec_list = []
