@@ -4,13 +4,14 @@
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v2.0.1'
-__date__        = '2014-03-08'
+__version__     = 'v2.0.2'
+__date__        = '2014-04-18'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 2.0.2 2014-04-18 Fixed bug #3
 # 2.0.1 2014-03-08 Minor code cleanup
 # 2.0.0 2014-03-07 Moved to GitHub, released under MIT license
 # 1.21  2014-02-16 Added discover function (-d and -D)
@@ -857,7 +858,7 @@ def main():
         
         if (minimize):
             print_info("Minimizing font '%s' according to the characters appearing in '%s'..." % (fontFile, plainFile), quiet)
-            minimized_font_list = minimize_font(fontFile, ebookCharList, minimizedFontFile)
+            minimized_font_list = minimize_font(fontFile, plainCharList, minimizedFontFile)
             print_info("Minimizing font '%s' according to the characters appearing in '%s'... Done" % (fontFile, plainFile), quiet)
             print_info("Successfully created minimized font '%s'" % (minimizedFontFile), quiet)
             if (outputEPUB):
