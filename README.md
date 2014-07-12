@@ -5,7 +5,7 @@
 * Version: 2.0.2
 * Date: 2014-04-18
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
-
+* License: the MIT License (MIT), see LICENSE.md
 
 
 ## Usage
