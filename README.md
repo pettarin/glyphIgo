@@ -164,4 +164,4 @@ Instead, the name comes from `glyph` and `figo` (Italian slang for `cool`).
 
 I needed to perform the "font checking" on nearly 100,000 EPUB files at once, for a large project. Then, I felt bad having this little piece of code sitting idly, so I decided to publish it on Google Code. In March 2014, I moved it to GitHub.
 
-[![Analytics](https://ga-beacon.appspot.com/UA-52776738-1/glyphIgo)](https://github.com/igrigorik/ga-beacon)
+[![Analytics](https://ga-beacon.appspot.com/UA-52776738-1/glyphIgo)](http://www.albertopettarin.it)
