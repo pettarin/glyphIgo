@@ -4,13 +4,14 @@
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v2.0.2'
-__date__        = '2014-04-18'
+__version__     = 'v2.0.3'
+__date__        = '2014-07-29'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 2.0.3 2014-07-29 Font obfuscation/deobfuscation
 # 2.0.2 2014-04-18 Fixed bug #3
 # 2.0.1 2014-03-08 Minor code cleanup
 # 2.0.0 2014-03-07 Moved to GitHub, released under MIT license
@@ -38,7 +39,7 @@ __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPU
 #
 ### END changelog ###
 
-import codecs, collections, getopt, fontforge, os, re, sys, unicodedata, zipfile
+import codecs, collections, fontforge, getopt, hashlib, os, re, sys, unicodedata, zipfile
 from htmlentitydefs import name2codepoint
 
 ### BEGIN read_command_line_parameters ###
@@ -47,7 +48,7 @@ from htmlentitydefs import name2codepoint
 def read_command_line_parameters(argv):
 
     try:
-        optlist, free = getopt.getopt(argv[1:], 'chmqsvud:D:e:f:g:l:L:o:p:', ['discover=', 'Discover=', 'ebook=', 'font=', 'glyphs=', 'lookup=', 'Lookup=', 'output=', 'plain=', 'count', 'help', 'minimize', 'preserve', 'quiet', 'sort', 'verbose', 'epub'])
+        optlist, free = getopt.getopt(argv[1:], 'chmqsvud:D:e:f:g:k:l:L:o:p:', ['discover=', 'Discover=', 'ebook=', 'font=', 'glyphs=', 'key=', 'lookup=', 'Lookup=', 'output=', 'plain=', 'adobe', 'count', 'epub', 'help', 'idpf', 'minimize', 'preserve', 'quiet', 'sort', 'verbose'])
     #Python2#
     except getopt.GetoptError, err:
     #Python3#    except getopt.GetoptError as err:
@@ -77,6 +78,9 @@ def usage():
     print_(" -e, --ebook <ebook>   : ebook in EPUB format")
     print_(" -p, --plain <ebook>   : ebook file, in plain text UTF-8 format")
     print_(" -m, --minimize        : retain only the glyphs of <font> that appear in <ebook>")
+    print_(" -k, --key <uid>       : (de)obfuscate <font> using <uid> to compute the obfuscation key")
+    print_(" --adobe               : use Adobe obfuscation algorithm")
+    print_(" --idpf                : use IDPF obfuscation algorithm (default)")
     print_(" -o, --output <name>   : use <name> for the font to be created")
     print_(" --preserve            : preserve X(HT)ML tags instead of stripping them away")
     print_(" -s, --sort            : sort output by character count instead of character codepoint")
@@ -120,8 +124,8 @@ def usage():
     print_("  7. As in Example 5, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint")
     print_("     $ %s %s -f font.ttf -e ebook.epub -s" % (e, s))
     print_("")    
-    print_("  8. Create new.font.otf containing only the glyphs of font.ttf that also appear in ebook.epub")
-    print_("     $ %s %s -m -f font.ttf -e ebook.epub -o new.font.otf" % (e, s))
+    print_("  8. Create min.font.otf containing only the glyphs of font.ttf that also appear in ebook.epub")
+    print_("     $ %s %s -m -f font.ttf -e ebook.epub -o min.font.otf" % (e, s))
     print_("")
     print_("  9. Convert font.ttf (TTF) into font.otf (OTF)")
     print_("     $ %s %s -f font.ttf -o font.otf" % (e, s))
@@ -143,6 +147,9 @@ def usage():
     print_("")
     print_(" 14. Fuzzy lookup for information for Unicode characters which are Greek omega letters with oxia")
     print_("     $ %s %s -L \"GREEK OMEGA OXIA\"" % (e, s))
+    print_("")
+    print_(" 15. (De)obfuscate font.otf using the given key and the IDPF algorithm")
+    print_("     $ %s %s -f font.otf -k \"urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd\"" % (e, s))
     print_("")
 ### END usage ###
 
@@ -570,6 +577,57 @@ def perform_lookup(query, fuzzyLookup, discoverLookup, quiet):
 ### END perform_lookup ###
 
 
+### BEGIN obfuscate_font ###
+def obfuscate_font(fontFile, obfuscationKey, obfuscationMethodIDPF, obfuscatedFontFile):
+    # TODO Python3 support?
+    f = open(fontFile, 'rb')
+    fontData = bytearray(f.read())
+    f.close()
+
+    d = open(obfuscatedFontFile, 'wb')
+    keyData = bytearray(get_obfuscation_key(obfuscationKey, obfuscationMethodIDPF))
+    keySize = len(keyData)
+    i = 0
+    outer = 0
+    outer_max, inner_max = get_obfuscation_header_size(obfuscationMethodIDPF)
+    
+    while (outer < outer_max) and (i < len(fontData)):
+        inner = 0
+        while (inner < inner_max) and (i < len(fontData)):
+            sourceByte = fontData[i]
+            keyByte = keyData[inner % keySize]
+            obfuscatedByte = sourceByte ^ keyByte
+            d.write(chr(obfuscatedByte))
+            inner += 1
+            i += 1
+        outer += 1
+    if (i < len(fontData) - 1):
+        d.write(fontData[i:])
+    d.close()
+
+def get_obfuscation_header_size(idpf_method=True):
+    if (idpf_method):
+        return [52, 20]
+    else:
+        return [64, 16]
+
+def get_obfuscation_key(key, idpf_method=True):
+    k = key
+    if (idpf_method):
+        k = k.replace(u"\u0020", "")
+        k = k.replace(u"\u0009", "")
+        k = k.replace(u"\u000d", "")
+        k = k.replace(u"\u000a", "")
+        d = hashlib.sha1(k).digest()
+    else:
+        k = k.replace(u"urn:uuid:", "")
+        k = k.replace(u"-", "")
+        k = k.replace(u":", "")
+        d = k 
+    return str(d)
+### END obfuscate_font ###
+
+
 ### BEGIN print_Unicode_info ###
 def print_Unicode_info(char, short):
     name = unicodedata.name(char, "UNKNOWN")
@@ -624,6 +682,14 @@ def main():
     outputEPUB = False
     if (('-u' in options) or ('--epub' in options)):
        outputEPUB  = True
+
+    obfuscationMethodIDPF = True
+    if (('--adobe' in options) and ('--idpf' in options)):
+        print_error("You cannot specify both '%s' and '%s' parameters." % ('--adobe', '--idpf'))
+    if ('--adobe' in options):
+        obfuscationMethodIDPF = False
+    if ('--idpf' in options):
+        obfuscationMethodIDPF = True
 
     lookupArgument = None
     fuzzyLookup = False
@@ -703,20 +769,41 @@ def main():
     if ((ebookFile != None) and (plainFile != None)):
         print_error("You cannot specify both an ebook file and a plain text file.")
 
+    obfuscate = False
+    obfuscatedFontFile = None
+    obfuscationKey = None
+    if ((('-k' in options) or ('--key' in options)) and (fontFile != None)):
+        obfuscate = True
+        if ('-k' in options):
+            obfuscationKey = options['-k']
+        if ('--key' in options):
+            obfuscationKey = options['--key']
+        head, tail = os.path.split(fontFile)
+        obfuscatedFontFile = os.path.join(head, "obf." + tail)
+        if (('-o' in options) or ('--output' in options)):
+            if ('-o' in options) and ('--output' in options):
+                print_error("You cannot specify both '%s' and '%s' parameters." % ('-o', '--output'))
+            if ('-o' in options):
+                obfuscatedFontFile = options['-o']
+            if ('--output' in options):
+                obfuscatedFontFile = options['--output']
+
     minimize = False
     minimizedFontFile = None
     if ((('-m' in options) or ('--minimize' in options)) and (fontFile != None)):
         minimize = True
         head, tail = os.path.split(fontFile)
-        minimizedFontFile = os.path.join(head, "new." + tail)    
-
-    if ((('-o' in options) or ('--output' in options)) and (fontFile != None)):
+        minimizedFontFile = os.path.join(head, "min." + tail)    
+   
+    # NOTE this has a side-effect, must go with code refactoring
+    if (('-o' in options) or ('--output' in options)):
         if ('-o' in options) and ('--output' in options):
             print_error("You cannot specify both '%s' and '%s' parameters." % ('-o', '--output'))
         if ('-o' in options):
             minimizedFontFile = options['-o']
         if ('--output' in options):
             minimizedFontFile = options['--output']
+
 
     # if fontFile, ebookFile, countEbookFile are None, print usage and exit
     if ( (len(options) == 0) or
@@ -752,6 +839,17 @@ def main():
 
     # exit code to be returned
     returnCode = 0
+   
+    # obfuscate/deobfuscate font
+    if ((fontFile != None) and (obfuscatedFontFile != None)):
+        print_info("(De)obfuscating font '%s' into '%s'..." % (fontFile, obfuscatedFontFile), quiet)
+        print_info("(De)obfuscating with %s algorithm" % ("IDPF" if obfuscationMethodIDPF else "Adobe"), quiet)
+        print_info("(De)obfuscating with key '%s'" % (obfuscationKey), quiet)
+        obfuscate_font(fontFile, obfuscationKey, obfuscationMethodIDPF, obfuscatedFontFile)
+        print_info("(De)obfuscating font '%s' into '%s'... Done" % (fontFile, obfuscatedFontFile), quiet)
+        # TODO combine obfuscation with other options 
+        sys.exit(returnCode)
+
     fontCharList = []
     # read fontFile
     if (fontFile != None):

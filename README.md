@@ -2,15 +2,14 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 2.0.2
-* Date: 2014-04-18
+* Version: 2.0.3
+* Date: 2014-07-29
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 * License: the MIT License (MIT), see LICENSE.md
 
-
 ## Usage
 
-There are eight main usage scenarios:
+There are nine main usage scenarios:
 
 1. list all Unicode characters used in an EPUB file or a plain text UTF-8 file,
 2. list all Unicode glyphs present in a TTF/OTF/WOFF font file,
@@ -20,6 +19,7 @@ There are eight main usage scenarios:
 6. export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
 7. lookup for information about a given Unicode character, including fuzzy name matching, and
 8. count the number of characters in an EPUB file or a plain text UTF-8 file.
+9. (de)obfuscate a font, with either the IDPF or the Adobe algorithm
 
 The syntax is the following:
 
@@ -33,6 +33,9 @@ Arguments:
  -e, --ebook <ebook>   : ebook in EPUB format
  -p, --plain <ebook>   : ebook file, in plain text UTF-8 format
  -m, --minimize        : retain only the glyphs of <font> that appear in <ebook>
+ -k, --key <uid>       : (de)obfuscate <font> using <uid> to compute the obfuscation key
+ --adobe               : use Adobe obfuscation algorithm
+ --idpf                : use IDPF obfuscation algorithm (default)
  -o, --output <name>   : use <name> for the font to be created
  --preserve            : preserve X(HT)ML tags instead of stripping them away
  -s, --sort            : sort output by character count instead of character codepoint
@@ -42,7 +45,7 @@ Arguments:
  -l, --lookup <char>   : lookup Unicode information for character <char>, given as Unicode char or dec/hex code or exact name
  -d, --discover <char> : same as -l, but only print the Unicode char and name
  -L, --Lookup <name>   : lookup Unicode information for character <name>, with fuzzy name lookup (WARNING: very slow!)
- -D, --Discover <char> : same as -L, but only print the Unicode char and name
+ -D, --Discover <name> : same as -L, but only print the Unicode char and name
  -c, --count           : count the number of characters in the text of <ebook> (specified with -e or -p)
 
 Exit codes:
@@ -53,6 +56,11 @@ Exit codes:
  4 = minimization/conversion failed
  8 = lookup failed
 ```
+
+**Important note:** I plan to heavily refactor the code (it is really needed!),
+and release the result as v2.1.0.
+That version will use `argparse` instead of `getopt`,
+and _might_ rename some of the above switches.
 
 ### Examples
 
@@ -78,8 +86,8 @@ Exit codes:
   7. As in Example 5, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint
      $ python glyphIgo.py -f font.ttf -e ebook.epub -s
 
-  8. Create new.font.otf containing only the glyphs of font.ttf that also appear in ebook.epub
-     $ python glyphIgo.py -m -f font.ttf -e ebook.epub -o new.font.otf
+  8. Create min.font.otf containing only the glyphs of font.ttf that also appear in ebook.epub
+     $ python glyphIgo.py -m -f font.ttf -e ebook.epub -o min.font.otf
 
   9. Convert font.ttf (TTF) into font.otf (OTF)
      $ python glyphIgo.py -f font.ttf -o font.otf
@@ -101,6 +109,9 @@ Exit codes:
 
  14. Fuzzy lookup for information for Unicode characters which are Greek omega letters with oxia
      $ python glyphIgo.py -L "GREEK OMEGA OXIA"
+
+ 15. (De)obfuscate font.otf using the given key and the IDPF algorithm
+     $ python glyphIgo.py -f font.otf -k "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd"
 ```
 
 Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
@@ -148,7 +159,7 @@ To use `-u` or `--epub` switch, you also need to download `genEPUB.py` and put i
 * Let the user specify the source file encoding
 * Support for Unicode modifiers
 * Full EPUB parsing
-* Font obfuscation
+* Font obfuscation: parse the uid directly from a given EPUB
 
 
 
