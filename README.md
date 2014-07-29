@@ -17,9 +17,9 @@ There are nine main usage scenarios:
 4. minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file,
 5. convert a font file from/to TTF/OTF/WOFF format,
 6. export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
-7. lookup for information about a given Unicode character, including fuzzy name matching, and
-8. count the number of characters in an EPUB file or a plain text UTF-8 file.
-9. (de)obfuscate a font, with either the IDPF or the Adobe algorithm
+7. lookup for information about a given Unicode character, including fuzzy name matching,
+8. count the number of characters in an EPUB file or a plain text UTF-8 file, and
+9. (de)obfuscate a font, with either the IDPF or the Adobe algorithm.
 
 The syntax is the following:
 
