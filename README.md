@@ -7,8 +7,6 @@
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 * License: the MIT License (MIT), see LICENSE.md
 
-## Usage
-
 There are nine main usage scenarios:
 
 1. list all Unicode characters used in an EPUB file or a plain text UTF-8 file,
@@ -21,7 +19,12 @@ There are nine main usage scenarios:
 8. count the number of characters in an EPUB file or a plain text UTF-8 file, and
 9. (de)obfuscate a font, with either the IDPF or the Adobe algorithm.
 
-The syntax is the following:
+### Important updates
+
+* 2014-07-30 I plan to heavily refactor the code (it is really needed!), and release the result as v2.1.0. That version will use `argparse` instead of `getopt`, and _might_ rename some of the above switches.
+
+
+## Usage
 
 ```
 $ python glyphIgo.py [ARGUMENTS]
@@ -56,11 +59,6 @@ Exit codes:
  4 = minimization/conversion failed
  8 = lookup failed
 ```
-
-**Important note:** I plan to heavily refactor the code (it is really needed!),
-and release the result as v2.1.0.
-That version will use `argparse` instead of `getopt`,
-and _might_ rename some of the above switches.
 
 ### Examples
 
@@ -117,13 +115,11 @@ and _might_ rename some of the above switches.
 Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
 
 
-
 ## License
 
 **glyphIgo** is released under the MIT License since version 2.0.0 (2014-03-07).
 
 Previous versions, hosted in a Google Code repo, were released under the GNU GPL 3 License.
-
 
 
 ## Technical Notes
@@ -153,14 +149,12 @@ Unfortunately, there is no `python-fontforge` module for Python 3 in the stable 
 To use `-u` or `--epub` switch, you also need to download `genEPUB.py` and put it into the same directory of `glyphIgo.py`.
 
 
-
 ## Limitations and Missing Features 
 
 * Let the user specify the source file encoding
 * Support for Unicode modifiers
 * Full EPUB parsing
 * Font obfuscation: parse the uid directly from a given EPUB
-
 
 
 ## Trivia
