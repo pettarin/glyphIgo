@@ -21,7 +21,7 @@ There are nine main usage scenarios:
 
 ### Important updates
 
-* 2014-07-30 I plan to heavily refactor the code (it is really needed!), and release the result as v2.1.0. That version will use `argparse` instead of `getopt`, and _might_ rename some of the above switches.
+* 2014-07-30 I plan to **heavily refactor** the code (it is really needed!), and release the result as **v2.1.0**. That version will use `argparse` instead of `getopt`, and _might_ change some of the switch/parameters names.
 
 
 ## Usage
