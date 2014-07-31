@@ -624,7 +624,7 @@ $ python glyphIgo.py check -f font.ttf -e ebook2.epub -s
 
 
 
-## As in the previous example, but also generate EPUB files for both the font file and the eBook file, and also for the missing characters (`missing.epub`)
+## As in the previous example, but also generate an EPUB files listing the missing characters (`missing.epub`)
 
 ```
 $ python glyphIgo.py check -f font.ttf -e ebook2.epub -s -u -o missing.epub
@@ -992,6 +992,40 @@ Bidirectional ON
 Mirrored      False
 NFC           ‽
 NFD           ‽
+=============
+```
+
+
+
+## Heuristic lookup for Unicode character `INTERROBANG`
+
+```
+$ python glyphIgo.py lookup -c "INTERROBANG" --heuristic
+
+[INFO] Matches found for 'INTERROBANG':
+Name          INTERROBANG
+Character     ‽
+Dec Codepoint 8253
+Hex Codepoint 0x203d
+Lowercase     ‽
+Uppercase     ‽
+Category      Po
+Bidirectional ON
+Mirrored      False
+NFC           ‽
+NFD           ‽
+=============
+Name          INVERTED INTERROBANG
+Character     ⸘
+Dec Codepoint 11800
+Hex Codepoint 0x2e18
+Lowercase     ⸘
+Uppercase     ⸘
+Category      Po
+Bidirectional ON
+Mirrored      False
+NFC           ⸘
+NFD           ⸘
 =============
 ```
 
