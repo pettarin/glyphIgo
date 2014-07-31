@@ -488,7 +488,7 @@ class GlyphIgo:
         for name in zfile.namelist():
             if ((name.lower().endswith(".xhtml")) or
                 (name.lower().endswith(".html")) or
-                ((name.lower().endswith(".xml")) and (not name != "META-INF/container.xml"))):
+                ((name.lower().endswith(".xml")) and (not name.startswith("META-INF")))):
                 file_bytes = zfile.read(name)
                 try:
                     # TODO check if utf-8 is always ok
