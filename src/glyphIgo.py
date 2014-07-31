@@ -4,13 +4,14 @@
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v2.0.3'
-__date__        = '2014-07-29'
+__version__     = 'v3.0.0'
+__date__        = '2014-07-31'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 3.0.0 2014-07-31 Heavy code refactoring, switched to argparse, changed CLI names
 # 2.0.3 2014-07-29 Font obfuscation/deobfuscation
 # 2.0.2 2014-04-18 Fixed bug #3
 # 2.0.1 2014-03-08 Minor code cleanup
@@ -39,512 +40,723 @@ __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPU
 #
 ### END changelog ###
 
-import codecs, collections, fontforge, getopt, hashlib, os, re, sys, unicodedata, zipfile
-from htmlentitydefs import name2codepoint
 
-### BEGIN read_command_line_parameters ###
-# read_command_line_parameters(argv)
-# read the command line parameters given in argv, and return a suitable dict()
-def read_command_line_parameters(argv):
-
-    try:
-        optlist, free = getopt.getopt(argv[1:], 'chmqsvud:D:e:f:g:k:l:L:o:p:', ['discover=', 'Discover=', 'ebook=', 'font=', 'glyphs=', 'key=', 'lookup=', 'Lookup=', 'output=', 'plain=', 'adobe', 'count', 'epub', 'help', 'idpf', 'minimize', 'preserve', 'quiet', 'sort', 'verbose'])
-    #Python2#
-    except getopt.GetoptError, err:
-    #Python3#    except getopt.GetoptError as err:
-        print_error(str(err))
-
-    return dict(optlist)
-### END read_command_line_parameters ###
+#import argcomplete
+import argparse
+import codecs
+import collections
+import fontforge
+import hashlib
+import htmlentitydefs
+import os
+import re
+import sys
+import unicodedata
+import zipfile
 
 
-### BEGIN usage ###
-# usage()
-# print script usage
-def usage():
-    #Python2#
-    e = "python"
-    #Python2#
-    s = "glyphIgo.py"
-    #Python3#    e = "python3"
-    #Python3#    s = "glyphIgo3.py"
-    print_("")
-    print_("$ %s %s [ARGUMENTS]" % (e, s))
-    print_("")
-    print_("Arguments:")
-    print_(" -h, --help            : print this usage message and exit")
-    print_(" -f, --font <font>     : font file, in TTF/OTF/WOFF format")
-    print_(" -g, --glyphs <list>   : use this list of glyphs instead of opening a font file")
-    print_(" -e, --ebook <ebook>   : ebook in EPUB format")
-    print_(" -p, --plain <ebook>   : ebook file, in plain text UTF-8 format")
-    print_(" -m, --minimize        : retain only the glyphs of <font> that appear in <ebook>")
-    print_(" -k, --key <uid>       : (de)obfuscate <font> using <uid> to compute the obfuscation key")
-    print_(" --adobe               : use Adobe obfuscation algorithm")
-    print_(" --idpf                : use IDPF obfuscation algorithm (default)")
-    print_(" -o, --output <name>   : use <name> for the font to be created")
-    print_(" --preserve            : preserve X(HT)ML tags instead of stripping them away")
-    print_(" -s, --sort            : sort output by character count instead of character codepoint")
-    print_(" -q, --quiet           : quiet output")
-    print_(" -v, --verbose         : verbose output of Unicode codepoints")
-    print_(" -u, --epub            : output an EPUB file containing the Unicode characters in the input file(s)")
-    print_(" -l, --lookup <char>   : lookup Unicode information for character <char>, given as Unicode char or dec/hex code or exact name")
-    print_(" -d, --discover <char> : same as -l, but only print the Unicode char and name")
-    print_(" -L, --Lookup <name>   : lookup Unicode information for character <name>, with fuzzy name lookup (WARNING: very slow!)")
-    print_(" -D, --Discover <name> : same as -L, but only print the Unicode char and name")
-    print_(" -c, --count           : count the number of characters in the text of <ebook> (specified with -e or -p)")
-    print_("")
-    print_("Exit codes:")
-    print_("")
-    print_(" 0 = no error / no missing glyphs in the font file")
-    print_(" 1 = invalid argument(s) error")
-    print_(" 2 = missing glyphs in the font file to correctly display the given file/ebook")
-    print_(" 4 = minimization/conversion failed")
-    print_(" 8 = lookup failed")
-    print_("")
-    print_("Examples:")
-    print_("")
-    print_("  1. Print this usage message")
-    print_("     $ %s %s -h" % (e, s))
-    print_("")
-    print_("  2. Print the list of glyphs in font.ttf")
-    print_("     $ %s %s -f font.ttf" % (e, s))
-    print_("")
-    print_("  3. Print the list of characters in ebook.epub")
-    print_("     $ %s %s -e ebook.epub" % (e, s))
-    print_("")
-    print_("  4. Print the list of characters in page.xhtml")
-    print_("     $ %s %s -p page.xhtml" % (e, s))
-    print_("")
-    print_("  5. Check whether all the characters in ebook.epub can be displayed by font.ttf")
-    print_("     $ %s %s -f font.ttf -e ebook.epub" % (e, s))
-    print_("")
-    print_("  6. As above, but use font_glyph_list.txt containing a list of decimal codepoints for the font glyphs")
-    print_("     $ %s %s -g font_glyph_list.txt -e ebook.epub" % (e, s))
-    print_("")
-    print_("  7. As in Example 5, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint")
-    print_("     $ %s %s -f font.ttf -e ebook.epub -s" % (e, s))
-    print_("")    
-    print_("  8. Create min.font.otf containing only the glyphs of font.ttf that also appear in ebook.epub")
-    print_("     $ %s %s -m -f font.ttf -e ebook.epub -o min.font.otf" % (e, s))
-    print_("")
-    print_("  9. Convert font.ttf (TTF) into font.otf (OTF)")
-    print_("     $ %s %s -f font.ttf -o font.otf" % (e, s))
-    print_("")
-    print_(" 10. As in Example 3, but also create ebook.epub.epub containing the list of Unicode characters")
-    print_("     $ %s %s -e ebook.epub -u" % (e, s))
-    print_("")
-    print_(" 11. As in Example 5, but also create missing.epub containing the list of missing Unicode characters")
-    print_("     $ %s %s -f font.ttf -e ebook.epub -u" % (e, s))
-    print_("")
-    print_(" 12. Lookup for information for Unicode character")
-    print_("     $ %s %s -l d8253" % (e, s))
-    print_("     $ %s %s -l x203d" % (e, s))
-    print_("     $ %s %s -l ‽" % (e, s))
-    print_("     $ %s %s -l \"INTERROBANG\"" % (e, s))
-    print_("")
-    print_(" 13. Count the number of characters in ebook.epub")
-    print_("     $ %s %s -c -e ebook.epub" % (e, s))
-    print_("")
-    print_(" 14. Fuzzy lookup for information for Unicode characters which are Greek omega letters with oxia")
-    print_("     $ %s %s -L \"GREEK OMEGA OXIA\"" % (e, s))
-    print_("")
-    print_(" 15. (De)obfuscate font.otf using the given key and the IDPF algorithm")
-    print_("     $ %s %s -f font.otf -k \"urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd\"" % (e, s))
-    print_("")
-### END usage ###
+class CustomParser:
+    
+    COMMAND_CHECK = "check"
+    COMMAND_CONVERT = "convert"
+    COMMAND_COUNT = "count"
+    COMMAND_LIST = "list"
+    COMMAND_LOOKUP = "lookup"
+    COMMAND_OBFUSCATE = "obfuscate"
+    COMMAND_SUBSET = "subset"
+    COMMAND_ALL = [
+        COMMAND_CHECK,
+        COMMAND_CONVERT,
+        COMMAND_COUNT,
+        COMMAND_LIST,
+        COMMAND_LOOKUP,
+        COMMAND_OBFUSCATE,
+        COMMAND_SUBSET
+    ]
+    COMMAND_DEFAULT = COMMAND_LIST 
+    
+    COMMAND_REQUIRED_PARAMETERS = {
+        COMMAND_CHECK: [ ["ebook", "plain"], ["font", "glyphs"] ],
+        COMMAND_CONVERT: [ ["font"], ["output"] ],
+        COMMAND_COUNT: [ ["ebook", "plain"] ],
+        COMMAND_LIST: [ ["ebook", "font", "glyphs", "plain"] ],
+        COMMAND_LOOKUP: [ ["character"] ],
+        COMMAND_OBFUSCATE: [ ["font"], ["id"] ],
+        COMMAND_SUBSET: [ ["ebook", "plain"], ["font"] ]
+    } 
+    
+    DESCRIPTION = __description__
+    
+    EXAMPLES = [
+        {
+            "msg": "Print this usage message",
+            "cmd": ["-h"]
+        },
+        {
+            "msg": "Check whether all the characters in ebook.epub can be displayed by font.ttf",
+            "cmd": ["check -f font.ttf -e ebook.epub"]
+        },
+        {
+            "msg": "As above, but use font_glyph_list.txt containing a list of decimal codepoints for the font glyphs",
+            "cmd": ["check -g font_glyph_list.txt -e ebook.epub"]
+        },
+        {
+            "msg": "As above, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint",
+            "cmd": ["check -f font.ttf -e ebook.epub -s"]
+        },
+        {
+            "msg": "As above, but also create missing.epub containing the list of missing Unicode characters",
+            "cmd": ["check -f font.ttf -e ebook.epub -u -o missing.epub"]
+        },
+        {
+            "msg": "Convert font.ttf (TTF) into font.otf (OTF)",
+            "cmd": ["convert -f font.ttf -o font.otf"]
+        },
+        {
+            "msg": "Count the number of characters in ebook.epub",
+            "cmd": ["count -e ebook.epub"]
+        },
+        {
+            "msg": "As above, but preserve tags",
+            "cmd": ["count -e ebook.epub --preserve"]
+        },
+        {
+            "msg": "Print the list of glyphs in font.ttf",
+            "cmd": ["list -f font.ttf"]
+        },
+        {
+            "msg": "As above, but just output the decimal codepoints",
+            "cmd": ["list -f font.ttf -q"]
+        },
+        {
+            "msg": "Print the list of characters in ebook.epub",
+            "cmd": ["list -e ebook.epub"]
+        },
+        {
+            "msg": "As above, but also create list.epub containing the list of Unicode characters",
+            "cmd": ["list -e ebook.epub -u -o list.epub"]
+        },
+        {
+            "msg": "Print the list of characters in page.xhtml",
+            "cmd": ["list -p page.xhtml"]
+        },
+        {
+            "msg": "Lookup for information for Unicode character",
+            "cmd": ["lookup -c d8253", "lookup -c x203d", "lookup -c ‽", "lookup -c \"INTERROBANG\""]
+        },
+        {
+            "msg": "As above, but print compact output",
+            "cmd": ["lookup --compact -c d8253", "lookup --compact -c x203d", "lookup --compact -c ‽", "lookup --compact -c \"INTERROBANG\""]
+        },
+        {
+            "msg": "Heuristic lookup for information for Unicode characters which are Greek omega letters with oxia",
+            "cmd": ["lookup --heuristic -c \"GREEK OMEGA OXIA\""]
+        },
+        {
+            "msg": "(De)obfuscate font.otf into obf.font.otf using the given id and the IDPF algorithm",
+            "cmd": ["obfuscate -f font.otf -i \"urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd\" -o obf.font.otf"]
+        },
+        {
+            "msg": "As above, but use Adobe algorithm",
+            "cmd": ["obfuscate -f font.otf -i \"urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd\" -o obf.font.otf --adobe"]
+        },
+        {
+            "msg": "Subset font.ttf into min.font.otf by copying only the glyphs appearing in ebook.epub",
+            "cmd": ["subset -f font.ttf -e ebook.epub -o min.font.otf"]
+        },
+        {
+            "msg": "",
+            "cmd": [""]
+        }
+    ]
+
+    EXIT_CODE_OK = 0
+    EXIT_CODE_RESERVED = 1
+    EXIT_CODE_INVALID_ARGUMENT = 2 # argparse default
+    EXIT_CODE_MISSING_GLYPHS = 4
+    EXIT_CODE_COMMAND_FAILED = 8
+    EXIT_CODES = [
+        {
+            "value": EXIT_CODE_OK,
+            "description": "no error"
+        },
+        {
+            "value": EXIT_CODE_RESERVED,
+            "description": "RESERVED"
+        },
+        {
+            "value": EXIT_CODE_INVALID_ARGUMENT,
+            "description": "invalid command line argument(s)"
+        },
+        {
+            "value": EXIT_CODE_MISSING_GLYPHS,
+            "description": "missing glyphs in the font file to correctly display the given ebook or file"
+        },
+        {
+            "value": EXIT_CODE_COMMAND_FAILED,
+            "description": "failure while executing the requested command"
+        }
+    ]
+
+    OPTIONAL_PARAMETERS = [
+        {
+            "short": "-c",
+            "long": "--character",
+            "help": "lookup CHARACTER, specified as name, partial name, dec/hex codepoint, or Unicode character",
+            "action": "store"
+        },
+        {
+            "short": "-d",
+            "long": "--decode",
+            "help": "use DECODE encoding to decode the input EBOOK or PLAIN file",
+            "action": "store"
+        },
+        {
+            "short": "-e",
+            "long": "--ebook",
+            "help": "ebook file, in EPUB/ZIP format",
+            "action": "store"
+        },
+        {
+            "short": "-f",
+            "long": "--font",
+            "help": "font file, in TTF/OTF/WOFF format",
+            "action": "store"
+        },
+        {
+            "short": "-g",
+            "long": "--glyphs",
+            "help": "font file, specified as a list of decimal Unicode codepoints contained in plain text file GLYPHS, one codepoint per line",
+            "action": "store"
+        },
+        {
+            "short": "-i",
+            "long": "--id",
+            "help": "(de)obfuscate FONT using ID to compute the obfuscation key",
+            "action": "store"
+        },
+        {
+            "short": "-o",
+            "long": "--output",
+            "help": "create OUTPUT file",
+            "action": "store"
+        },
+        {
+            "short": "-p",
+            "long": "--plain",
+            "help": "ebook file, in plain text format",
+            "action": "store"
+        },
+        {
+            "short": "-q",
+            "long": "--quiet",
+            "help": "quiet output",
+            "action": "store_true"
+        },
+        {
+            "short": "-s",
+            "long": "--sort",
+            "help": "sort output by character count instead of character codepoint",
+            "action": "store_true"
+        },
+        {
+            "short": "-u",
+            "long": "--epub",
+            "help": "output an EPUB file containing the Unicode characters in the input file(s)",
+            "action": "store_true"
+        },
+        {
+            "short": "-v",
+            "long": "--verbose",
+            "help": "verbose output",
+            "action": "store_true"
+        },
+        {
+            "short": "-w",
+            "long": "--nohumanreadable",
+            "help": "verbose output without human readable messages",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--adobe",
+            "help": "use Adobe obfuscation algorithm",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--compact",
+            "help": "compact lookup output (Unicode character, name, and codepoint only)",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--exact",
+            "help": "use exact Unicode lookup (default)",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--full",
+            "help": "full lookup output (default)",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--heuristic",
+            "help": "use heuristic Unicode lookup",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--idpf",
+            "help": "use IDPF obfuscation algorithm (default)",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--preserve",
+            "help": "preserve X(HT)ML tags instead of stripping them away",
+            "action": "store_true"
+        }
+    ]
+
+    OPTIONAL_PARAMETERS_CONFLICTS = [
+        [ "character", "ebook", "plain" ],
+        [ "character", "font", "glyphs" ],
+        [ "quiet", "verbose", "nohumanreadable" ],
+        [ "adobe", "idpf" ],
+        [ "compact", "full" ],
+        [ "exact", "heuristic" ]
+    ]
+
+    VERSION = __version__
+
+    def __check_arguments(self, args):
+        # check conflicts between optional parameters
+        for group in self.OPTIONAL_PARAMETERS_CONFLICTS:
+            count = 0
+            found = []
+            for parameter in group:
+                if (parameter in args):
+                    count += 1
+                    found.append(parameter)
+            if (count > 1):
+                msg = "Conflicting optional arguments: %s\n" % (str(found))
+                return False, msg
+        
+        # check arguments required by the given command 
+        for condition in self.COMMAND_REQUIRED_PARAMETERS[args.command]:
+            found = False
+            for parameter in condition:
+                found = found or (parameter in args)
+            if (not found):
+                msg = "After command '%s' you must specify %s\n" % (args.command, self.__get_pretty_or_string(condition))
+                return False, msg
+        
+        # all OK
+        return True, None
+
+    def __get_pretty_or_string(self, array):
+        if (len(array) == 1):
+            return "'--%s'" % (array[0])
+        s = ""
+        for a in array[:-1]:
+            s += "'--%s' or " % (a)
+        s += "'--%s'" % (array[-1])
+        return s
+
+    def __get_description_string(self):
+        return self.DESCRIPTION
+   
+    def __get_exit_codes_string(self):
+        codes = self.EXIT_CODES
+        s = "exit codes:\n"
+        trailing_characters = "  " 
+        value_separator = " = "
+        tot = len(str(codes[-1]["value"]))
+        for c in codes:
+            value = str(c["value"])
+            description = c["description"]
+            n = trailing_characters + " " * (tot - len(value))
+            s += n + value + value_separator + description + "\n"
+        return s
+
+    def __get_examples_string(self):
+        examples = self.EXAMPLES
+        s = "examples:\n"
+        trailing_characters = "  " 
+        number_separator = ". "
+        i = 1
+        tot = len(str(len(examples)))
+        for e in examples:
+            msg = e["msg"]
+            cmd = e["cmd"]
+            if (len(msg) > 0):
+                n = str(i)
+                n = trailing_characters + " " * (tot - len(n)) + n
+                s += n + number_separator + msg + "\n"
+                for c in cmd:
+                    s += trailing_characters + (" " * (tot + len(number_separator))) + "$ python " + sys.argv[0] + " " + c + "\n"
+                s += "\n"
+            else:
+                s += trailing_characters + "\n"
+            i += 1
+        return s
+
+    def __get_optional_parameters(self):
+        return self.OPTIONAL_PARAMETERS
+
+    def __get_usage(self):
+        return "$ python " + sys.argv[0] + " " + "|".join(self.COMMAND_ALL) + " [options]"
+
+    def __get_version(self):
+        return self.VERSION
+
+    def get_arguments(self):
+        program_usage = self.__get_usage()
+        program_description = self.__get_description_string()
+        program_epilog = self.__get_exit_codes_string() + "\n" + self.__get_examples_string()
+
+        parser = argparse.ArgumentParser(
+            usage=program_usage,
+            description=program_description,
+            epilog=program_epilog,
+            formatter_class=argparse.RawDescriptionHelpFormatter
+        )
+
+        parser.add_argument(
+                "command",
+                help="command", 
+                action="store",
+                default=self.COMMAND_DEFAULT,
+                choices=self.COMMAND_ALL
+        )
+        parser.add_argument(
+                "--version",
+                help="print version and exit",
+                action="version",
+                version=self.__get_version())
+
+        for param in self.__get_optional_parameters():
+            if (param["short"]):
+                parser.add_argument(
+                    param["short"],
+                    param["long"],
+                    help=param["help"],
+                    action=param["action"],
+                    default=argparse.SUPPRESS
+                )
+            elif (param["long"]):
+                parser.add_argument(
+                    param["long"],
+                    help=param["help"],
+                    action=param["action"],
+                    default=argparse.SUPPRESS
+                )
+
+        # TODO investigate argcomplete.autocomplete(parser)
+        args = parser.parse_args()
+        
+        # standard ArgumentParser checker is cumbersome and limited
+        isOK, msg = self.__check_arguments(args)
+        if (not isOK):
+            msg = "[ERROR] " + msg
+            parser.exit(status=self.EXIT_CODE_INVALID_ARGUMENT, message=msg)
+        
+        return args
 
 
-### BEGIN check_existence ###
-# check_existence(filename)
-# checks whether filename exists
-def check_existence(filename):
-    if filename == None:
-        return False
-    return os.path.isfile(filename)
-### END check_existence ###
 
+class GlyphIgo:
+    __args = None
 
-### BEGIN print_error ###
-# print_error(error, displayusage=True)
-# print the given error, call usage, and exit
-# optional displayusage to skip usage
-def print_error(error, displayusage = True, exitcode = 1):
-    sys.stderr.write("[ERROR] " + error + " Aborting.\n")
-    if displayusage :
-        usage()
-    sys.exit(exitcode)
-### END print_error ###
+    def __init__(self, args):
+        self.__args = args
 
+    def __print_error(self, s):
+        sys.stderr.write("[ERROR] %s\n" % (s))
 
-### BEGIN print_info ###
-# print_info(info, quiet)
-# print the given info string
-def print_info(info, quiet):
-    if (not quiet):
-        print("[INFO] " + info)
-### END print_info ###
+    def __print_info(self, s):
+        if not (("quiet" in self.__args) or ("nohumanreadable" in self.__args)):
+            print "[INFO] %s" % (s)
 
+    def __get_ebook_char_list(self):
+        # TODO allow full EPUB parsing
+        text = ""
+        zfile = zipfile.ZipFile(self.__args.ebook)
+        for name in zfile.namelist():
+            if ((name.lower().endswith(".xhtml")) or
+                (name.lower().endswith(".html")) or
+                ((name.lower().endswith(".xml")) and (not name != "META-INF/container.xml"))):
+                file_bytes = zfile.read(name)
+                try:
+                    # TODO check if utf-8 is always ok
+                    text += file_bytes.decode('utf-8')
+                except:
+                    continue
+        zfile.close()
+        return self.__clean_text(text)
 
-### BEGIN print_ ###
-# print_(info)
-# print the given string
-def print_(info):
-    print(info)
-### END print_ ###
-
-
-### BEGIN get_font_char_list ###
-# get_font_char_list(fontFile)
-# return the list of glyhs in the given font file
-def get_font_char_list(fontFile):
-    font = fontforge.open(fontFile)
-    chars = []
-    for x in font.glyphs():
-        if (x.unicode > -1):
-            try:
+    def __get_font_char_list(self, only_chars=False):
+        chars = []
+        font = fontforge.open(self.__args.font)
+        for x in font.glyphs():
+            if (x.unicode > -1):
                 c = unichr(x.unicode)
-                chars += [ c ]
-            except:
-                # error
-                c = -1
-    return chars
-### END get_font_char_list ###
+                if (only_chars):
+                    chars.append(c)
+                else:
+                    chars.append([c, 1])
+        return chars
 
-### BEGIN get_glyphs_char_list ###
-# get_glyphs_char_list(fontFile)
-# return the list of glyhs in the given font file
-def get_glyphs_char_list(glyphsFile):
-    #Python2#
-    f = codecs.open(glyphsFile, 'r', 'utf-8', 'ignore')
-    #Python3#    f = open(glyphsFile, 'r', 'utf-8', 'ignore')
-    glyphsText = f.read()
-    f.close()
-
-    chars = []
-    for g in glyphsText.splitlines():
-        if ((len(g) > 0) and (g[0] != "#")):
-            try:
+    def __get_glyphs_char_list(self, only_chars=False):
+        chars = []
+        decode = "utf-8"
+        if ("decode" in self.__args):
+            decode = self.__args.decode
+        f = codecs.open(self.__args.glyphs, "r", decode, "ignore")
+        text = f.read()
+        f.close()
+        for g in text.splitlines():
+            if ((len(g) > 0) and (g[0] != "#")):
                 if ((len(g) > 2) and (g[0:2] == "0x")):
                     c = unichr(int(g[2:], 16))
                 elif ((len(g) > 1) and (g[0] == "x")):
                     c = unichr(int(g[1:], 16))
                 else:
                     c = unichr(int(g))
-                chars += [ c ]
-            except:
-                # error
-                c = -1
-    return chars
-### END get_glyphs_char_list ###
-
-### BEGIN minimize_font ###
-# minimize_font(fontFile, charList, newFontFile)
-# create newFontFile containing only the glyphs in charList
-# returns the list of actually present chars
-def minimize_font(fontFile, charList, newFontFile):
-    found = []
-    font_chars = get_font_char_list(fontFile)
-    font = fontforge.open(fontFile)
-    font.selection.none()
-    for c in charList:
-        if c[0] in font_chars:
-            font.selection.select(("more", "unicode"), ord(c[0]))
-            found.append(c[0])
-    font.selection.invert()
-    font.clear()
-    font.generate(newFontFile)
-    return found
-### END get_font_char_list ###
-
-### BEGIN convert_font ###
-# convert_font(fontFile, newFontFile)
-# create newFontFile containing all the glyphs in charList
-def convert_font(fontFile, newFontFile):
-    font = fontforge.open(fontFile)
-    font.selection.all()
-    font.generate(newFontFile)
-### END convert_font ###
-
-### BEGIN remove_tags ###
-# remove_tags(s)
-# remove X(HT)ML tags from the given string
-def remove_tags(s):
-    #TODO improve this
-    s = s.replace("\n", " ")
-    s = s.replace("\r", " ")
-    s = re.sub(r"[ ]+", " ", s)
-    s = re.sub(r"<[^>]+>", "", s)
-    return s
-### END remove_tags ###
-
-### BEGIN decode_xml_entities ###
-# decode_xml_entities(s)
-# substitute all the xml entities in s with the corresponding unicode characters
-def decode_xml_entities(s):
-    ### END fix ###
-    def fix(m):
-        c = m.group(1)
-        # escape the escape sequences
-        if (c == "amp"):
-            return "&"
-        if (c == "lt"):
-            return "<"
-        if (c == "gt"):
-            return ">"
-        if (c in name2codepoint):
-            # named entity
-            return unichr(name2codepoint[c])
-        else:
-            if ((c[0] == "#") and len(c) > 1):
-                # numeric
-                if ((c[1] == "x") and (len(c) > 2)):
-                    try:
-                        i = int(c[2:], 16)
-                        return unichr(i)
-                    except:
-                        # error
-                        return ''
+                if (only_chars):
+                    chars.append(c)
                 else:
-                    try:
-                        i = int(c[1:])
-                        return unichr(i)
-                    except:
-                        # error
-                        return ''
-            # error!
-            return ''
-    ### END fix ###
+                    chars.append([c, 1])
+        return chars
 
-    return re.sub(r"&([#a-z0-9]+);", fix, s)
-### END decode_xml_entities ###
+    def __get_plain_char_list(self):
+        decode = "utf-8"
+        if ("decode" in self.__args):
+            decode = self.__args.decode
+        f = codecs.open(self.__args.plain, "r", decode, "ignore")
+        text = f.read()
+        f.close()
+        return self.__clean_text(text)
 
-### BEGIN filter_string ###
-# filter_string(s)
-# return a list of (unique) Unicode characters in s, sorted by codepoint, with their count
-def filter_string(s):
-    mydict = collections.defaultdict(int)
-    for mychar in s:
-        mydict[mychar] += 1
-    mylist = []
-    for mychar in sorted(mydict.keys()):
-        mylist += [ [ mychar, mydict[mychar] ] ];
-    return mylist
-### END filter_string ###
+    # helper: clean text and produce a list of character,
+    # each with its number of occurrences
+    def __clean_text(self, text):
+        def remove_tags(s):
+            #TODO improve this?
+            s = s.replace("\n", " ")
+            s = s.replace("\r", " ")
+            s = re.sub(r"[ ]+", " ", s)
+            s = re.sub(r"<[^>]+>", "", s)
+            return s
 
-### BEGIN get_ebook_char_list ###
-# get_ebook_char_list(ebookFile)
-# open the given EPUB file, and cat all text together
-# TODO: full EPUB parsing 
-def get_ebook_char_list(ebookFile, preserveTags):
-    ebookText = ""
-    zfile = zipfile.ZipFile(ebookFile)
-    for name in zfile.namelist():
-        if ((name.lower().endswith(".xhtml")) or
-            (name.lower().endswith(".html")) or
-            ((name.lower().endswith(".xml")) and (not name.lower().startswith("meta-inf")))):
-            file_bytes = zfile.read(name)
-            try:
-                ebookText += file_bytes.decode('utf-8')
-            except:
-                # do nothing for now
-                # TODO: throw exception and catch it at the caller
-                continue
-    zfile.close()
+        def decode_xml_entities(s):
+            def fix(m):
+                c = m.group(1)
+                # escape the escape sequences
+                if (c == "amp"):
+                    return "&"
+                if (c == "lt"):
+                    return "<"
+                if (c == "gt"):
+                    return ">"
+                if (c in htmlentitydefs.name2codepoint):
+                    # named entity
+                    return unichr(htmlentitydefs.name2codepoint[c])
+                else:
+                    # TODO this is ugly
+                    if ((c[0] == "#") and len(c) > 1):
+                        # numeric
+                        if ((c[1] == "x") and (len(c) > 2)):
+                            try:
+                                i = int(c[2:], 16)
+                                return unichr(i)
+                            except:
+                                # error
+                                return ''
+                        else:
+                            try:
+                                i = int(c[1:])
+                                return unichr(i)
+                            except:
+                                # error
+                                return ''
+                    # error!
+                    return ''
 
-    if (not preserveTags):
-        ebookText = remove_tags(ebookText)
+            return re.sub(r"&([#a-z0-9]+);", fix, s)
 
-    ebookText = decode_xml_entities(ebookText)
-    ebookText = filter_string(ebookText)
-
-    return ebookText
-### END get_ebook_char_list ###
-
-### BEGIN get_plain_char_list ###
-# get_plain_char_list(plainFile)
-# open the given plain file, and return a list of unique unicode characters
-def get_plain_char_list(plainFile, preserveTags):
-    #Python2#
-    f = codecs.open(plainFile, 'r', 'utf-8', 'ignore')
-    #Python3#    f = open(plainFile, 'r', 'utf-8', 'ignore')
-    plainText = f.read()
-    f.close()
-
-    if (not preserveTags):
-        plainText = remove_tags(plainText)
-
-    plainText = decode_xml_entities(plainText)
-    plainText = filter_string(plainText)
-
-    return plainText
-### END get_plain_char_list ###
-
-### BEGIN escape ###
-# escape(s)
-# escape ASCII sequences
-def escape(s):
-    repl = [
-            ["\0", "\\0"],
-            ["\a", "\\a"],
-            ["\b", "\\b"],
-            ["\t", "\\t"],
-            ["\n", "\\n"],
-            ["\v", "\\v"],
-            ["\f", "\\f"],
-            ["\r", "\\r"]
-            ]
-    for r in repl:
-        s = s.replace(r[0], r[1])
-    return s
-### END escape ###
-
-### BEGIN print_char_list ###
-# print_char_list(charList, verbose, sortByCodepoint)
-# print a list of decimal codepoints of the given list of Unicode characters
-# if verbose = True, print also names and hex codepoints
-# if sortByCodepoint = True, sort the list by codepoint, otherwise by counter
-def print_char_list(charList, verbose, sortByCodepoint):
-    # sort by (descending) number of occurrences, instead of codepoint
-    if (not sortByCodepoint):
-        charList.sort(key=lambda x: -x[1])
-
-    if verbose:
-        for c in charList:
-            name = unicodedata.name(c[0], 'UNKNOWN NAME')
-            decCodePoint = ord(c[0])
-            hexCodePoint = hex(decCodePoint)
-            count = c[1]
-            print_("'%s'\t%s\t%s\t%s\t%s" % (escape(c[0]), decCodePoint, hexCodePoint, name, count))
-    else:
-        for c in charList:
-            decCodePoint = ord(c[0])
-            print_("%s" % decCodePoint)
-### END print_char_list ###
-
-### BEGIN print_glyph_list ###
-# print_glyph_list(glyphList, verbose)
-# print a list of decimal codepoints of the given list of glyphs
-# if verbose = True, print also names and hex codepoints
-def print_glyph_list(glyphList, verbose):
-
-    if verbose:
-        for c in glyphList:
-            name = unicodedata.name(c[0], 'UNKNOWN NAME')
-            decCodePoint = ord(c[0])
-            hexCodePoint = hex(decCodePoint)
-            print_("'%s'\t%s\t%s\t%s" % (escape(c[0]), decCodePoint, hexCodePoint, name))
-    else:
-        for c in glyphList:
-            decCodePoint = ord(c[0])
-            print_("%s" % decCodePoint)
-### END print_glyph_list ###
-
-
-### BEGIN output_epub ###
-# output_epub(dec_codepoint_list, title, epub_filename)
-# generate an EPUB file epub_filename
-# containing the dec_codepoint_list Unicode characters
-# with given title
-def output_epub(dec_codepoint_list, title, epub_filename):
-    from genEPUB import genEPUB
-    d = genEPUB()
-    d.createEPUB(dec_codepoint_list, title, epub_filename)
-### END output_epub ###
-
-
-### BEGIN get_dec_list ###
-# get_dec_list(gen_list, has_frequencies)
-# returns a list of decimal codepoints
-# if has_frequencies = True, the list is a list of tuples [ ['c', 11], ['d', 12], ... ]
-# if has_frequencies = False, the list is a list of chars [ 'a', 'b', ... ]
-def get_dec_list(gen_list, has_frequencies):
-    dec_list = []
-    if (has_frequencies):
-        for e in gen_list:
-            dec_list.append(ord(e[0]))
-    else:
-        for e in gen_list:
-            dec_list.append(ord(e))
-    return dec_list
-### END get_dec_list ###
-
-### BEGIN get_number_characters ###
-# get_number_characters(characters)
-# returns the total number of characters
-# by summing the frequencies of the different characters
-def get_number_characters(characters):
-    total = 0
-    for c in characters:
-        total += c[1]
-    return total
-### END get_number_characters ###
-
-### BEGIN compare ###
-# compare(fontList, fileList)
-# return a list of Unicode characters (with their counter) that appear in file but not in font
-#
-# TODO support combine operator to avoid the following problem:
-#      font might contain "LATIN SMALL LETTER A" and "MACRON" but not "LATIN SMALL LETTER A WITH MACRON"
-#      file might contain "LATIN SMALL LETTER A WITH MACRON"
-#      generating a missing glyph warning
-#
-def compare(fontList, fileList):
-    missing = []
-    for f in fileList:
-        # ignore ASCII characters with codepoint < 32
-        if (ord(f[0]) > 31) and (f[0] not in fontList):
-            missing += [ f ]
-    return missing
-### END compare ###
-
-
-### BEGIN perform_lookup ###
-#
-# Perform a lookup for the given query
-# which might be:
-# 1) Unicode character
-# 2) Unicode codepoint dec/hex (0x...)
-# 3) Unicode description
-# If fuzzyLookup == True, results contains the list of Unicode characters
-# whose name contains ALL the given query words
-# (e.g., "TAMIL", "GREEK CAPITAL", "GREEK OMEGA OXIA", etc.)
-# Print the results to stdout
-# Returns 0 (successful lookup) or 8 (failed lookup)
-# 
-def perform_lookup(query, fuzzyLookup, discoverLookup, quiet):
-    if ((query == None) or len(query) == 0):
-        return 8
+        def filter_string(s):
+            mydict = collections.defaultdict(int)
+            for mychar in s:
+                mydict[mychar] += 1
+            mylist = []
+            for mychar in sorted(mydict.keys()):
+                mylist.append([ mychar, mydict[mychar] ])
+            return mylist
+        
+        if (not ("preserve" in self.__args)):
+            text = remove_tags(text)
+        text = decode_xml_entities(text)
+        chars = filter_string(text)
+        return chars
     
-    results = []
-    if (fuzzyLookup):
-        # try fuzzy match
-        qw = query.upper().split(" ")
-        effective_qw = []
-        for q in qw:
-            if (len(q) > 0):
-                effective_qw.append(q)
-        # Unicode codepoints range from 0 to 0x10FFFF = 1114111
-        for i in range(1114112):
-            c = unichr(i)
-            name = unicodedata.name(c, "UNKNOWN").split(" ")
-            is_match = True
-            for e in effective_qw:
-                if (not (e in name)):
-                    is_match = False
-                    break
-            if (is_match):
-                results.append(c)
-        if (len(results) == 0):
-            # no match
-            return 8
-    else:
-        # try char, codepoint or exact name lookup
-        if (len(query) == 1):
-            # Unicode char
-            results = [ u"" + query ]
-        elif ((query[0] == "d") or (query[0] == "x")):
-            # decimal
-            try:
+    # helper: pretty print char list
+    def __print_char_list(self, chars):
+        def escape(s):
+            repl = [
+                ["\0", "\\0"],
+                ["\a", "\\a"],
+                ["\b", "\\b"],
+                ["\t", "\\t"],
+                ["\n", "\\n"],
+                ["\v", "\\v"],
+                ["\f", "\\f"],
+                ["\r", "\\r"]
+            ]
+            for r in repl:
+                s = s.replace(r[0], r[1])
+            return s
+        
+        if ("sort" in self.__args):
+            chars.sort(key=lambda x: -x[1])
+        if ("quiet" in self.__args):
+            for c in chars:
+                decCodePoint = ord(c[0])
+                print "%s" % (decCodePoint)
+        else:
+            for c in chars:
+                name = unicodedata.name(c[0], 'UNKNOWN NAME')
+                decCodePoint = ord(c[0])
+                hexCodePoint = hex(decCodePoint)
+                if (type(c) is list):
+                    # c = [ char, count ]
+                    count = c[1]
+                    print "'%s'\t%s\t%s\t%s\t%s" % (escape(c[0]), decCodePoint, hexCodePoint, name, count)
+                else:
+                    # c is a char
+                    print "'%s'\t%s\t%s\t%s" % (escape(c[0]), decCodePoint, hexCodePoint, name)
+
+    # helper: get the file path for output path
+    # either from "output" or from the original input file + prefix
+    def __get_name_output_file(self, input_file_path, prefix="", suffix=""):
+        if ("output" in self.__args):
+            return self.__args.output
+        dirname, filename = os.path.split(input_file_path)
+        filename = prefix + filename + suffix
+        return os.path.join(dirname, filename)
+
+    # helper: obfuscate a font
+    def __obfuscate_font(self):
+        def get_obfuscation_header_size(idpf_algorithm=True):
+            if (idpf_algorithm):
+                return [52, 20]
+            else:
+                return [64, 16]
+
+        def get_obfuscation_key(key, idpf_algorithm=True):
+            k = key
+            if (idpf_algorithm):
+                k = k.replace(u"\u0020", "")
+                k = k.replace(u"\u0009", "")
+                k = k.replace(u"\u000d", "")
+                k = k.replace(u"\u000a", "")
+                d = hashlib.sha1(k).digest()
+            else:
+                k = k.replace(u"urn:uuid:", "")
+                k = k.replace(u"-", "")
+                k = k.replace(u":", "")
+                d = k 
+            return str(d)
+ 
+        f = open(self.__args.font, 'rb')
+        fontData = bytearray(f.read())
+        f.close()
+        obfuscatedFontFile = self.__get_name_output_file(self.__args.font, prefix="obfuscated_")
+        d = open(obfuscatedFontFile, 'wb')
+        idpf_algorithm = True
+        algorithm_label = "IDPF"
+        if ("adobe" in self.__args):
+            idpf_algorithm = False
+            algorithm_label = "Adobe"
+        keyData = bytearray(get_obfuscation_key(self.__args.id, idpf_algorithm))
+        keySize = len(keyData)
+        i = 0
+        outer = 0
+        outer_max, inner_max = get_obfuscation_header_size(idpf_algorithm)
+        while (outer < outer_max) and (i < len(fontData)):
+            inner = 0
+            while (inner < inner_max) and (i < len(fontData)):
+                sourceByte = fontData[i]
+                keyByte = keyData[inner % keySize]
+                obfuscatedByte = sourceByte ^ keyByte
+                d.write(chr(obfuscatedByte))
+                inner += 1
+                i += 1
+            outer += 1
+        if (i < len(fontData) - 1):
+            d.write(fontData[i:])
+        d.close()
+        self.__print_info("(De)obfuscated font '%s' into '%s' using id '%s' and %s algorithm." % (self.__args.font, obfuscatedFontFile, self.__args.id, algorithm_label))
+
+    def __print_Unicode_info(self, char, short):
+        name = unicodedata.name(char, "UNKNOWN")
+        decCodepoint = ord(char)
+        hexCodepoint = hex(decCodepoint)
+        lower = char.lower()
+        upper = char.upper()
+        category = unicodedata.category(char)
+        bidirectional = unicodedata.bidirectional(char)
+        mirrored = True if (unicodedata.mirrored(char) == 1) else False
+        nfc = unicodedata.normalize("NFC", char)
+        nfd = unicodedata.normalize("NFD", char)
+        if (short):
+            print char + "\t" + name + " (U+" + str(hexCodepoint).upper().replace("0X", "") + ")"
+        else:
+            print "Name          " + name 
+            print "Character     " + char 
+            print "Dec Codepoint " + str(decCodepoint)
+            print "Hex Codepoint " + str(hexCodepoint)
+            print "Lowercase     " + lower
+            print "Uppercase     " + upper
+            print "Category      " + category
+            print "Bidirectional " + bidirectional
+            print "Mirrored      " + str(mirrored)
+            print "NFC           " + nfc
+            print "NFD           " + nfd
+            print "============="
+
+    # helper: perform a lookup for the given query
+    def __lookup_character(self):
+        results = []
+        query = self.__args.character
+        if ("heuristic" in self.__args):
+            # try fuzzy match
+            qw = query.upper().split(" ")
+            effective_qw = []
+            for q in qw:
+                if (len(q) > 0):
+                    effective_qw.append(q)
+            # Unicode codepoints range from 0 to 0x10FFFF = 1114111
+            for i in range(1114112):
+                c = unichr(i)
+                name = unicodedata.name(c, "UNKNOWN").split(" ")
+                is_match = True
+                for e in effective_qw:
+                    if (not (e in name)):
+                        is_match = False
+                        break
+                if (is_match):
+                    results.append(c)
+        else:
+            # try char, codepoint or exact name lookup
+            if (len(query) == 1):
+                # Unicode char
+                results = [ u"" + query ]
+            elif ((query[0] == "d") or (query[0] == "x")):
+                # codepoint
                 if (query[0] == "d"):
                     # decimal
                     codepoint = int(query[1:])
@@ -552,475 +764,229 @@ def perform_lookup(query, fuzzyLookup, discoverLookup, quiet):
                     # hex
                     codepoint = int(query[1:], 16)
                 results = [ unichr(codepoint) ]
-            except:
-                # no match
-                return 8
-        else: 
-            # try exact name lookup
-            try:
+            else: 
+                # exact name
                 results = [ unicodedata.lookup(query) ]
-            except:
-                # no match
-                return 8
-
-    if (discoverLookup):
-        for c in results:
-            print_Unicode_info(c, discoverLookup)
-    else:
-        print_info("Lookup results for query '%s'" % (query), quiet)
-        for c in results:
-            print_info("Matched Unicode character '%s'" % (c), quiet)
-            print_Unicode_info(c, discoverLookup)
-            print_info("=== === === === === ===", quiet)
-    
-    return 0
-### END perform_lookup ###
-
-
-### BEGIN obfuscate_font ###
-def obfuscate_font(fontFile, obfuscationKey, obfuscationMethodIDPF, obfuscatedFontFile):
-    # TODO Python3 support?
-    f = open(fontFile, 'rb')
-    fontData = bytearray(f.read())
-    f.close()
-
-    d = open(obfuscatedFontFile, 'wb')
-    keyData = bytearray(get_obfuscation_key(obfuscationKey, obfuscationMethodIDPF))
-    keySize = len(keyData)
-    i = 0
-    outer = 0
-    outer_max, inner_max = get_obfuscation_header_size(obfuscationMethodIDPF)
-    
-    while (outer < outer_max) and (i < len(fontData)):
-        inner = 0
-        while (inner < inner_max) and (i < len(fontData)):
-            sourceByte = fontData[i]
-            keyByte = keyData[inner % keySize]
-            obfuscatedByte = sourceByte ^ keyByte
-            d.write(chr(obfuscatedByte))
-            inner += 1
-            i += 1
-        outer += 1
-    if (i < len(fontData) - 1):
-        d.write(fontData[i:])
-    d.close()
-
-def get_obfuscation_header_size(idpf_method=True):
-    if (idpf_method):
-        return [52, 20]
-    else:
-        return [64, 16]
-
-def get_obfuscation_key(key, idpf_method=True):
-    k = key
-    if (idpf_method):
-        k = k.replace(u"\u0020", "")
-        k = k.replace(u"\u0009", "")
-        k = k.replace(u"\u000d", "")
-        k = k.replace(u"\u000a", "")
-        d = hashlib.sha1(k).digest()
-    else:
-        k = k.replace(u"urn:uuid:", "")
-        k = k.replace(u"-", "")
-        k = k.replace(u":", "")
-        d = k 
-    return str(d)
-### END obfuscate_font ###
+        return results
+        
+    def __create_epub(self, char_list):
+        dec_codepoint_list = map(lambda x: ord(x[0]), char_list)
+        font_name = ""
+        ebook_name = ""
+        if ("font" in self.__args):
+            font_name = self.__args.font
+        if ("glyphs" in self.__args):
+            font_name = self.__args.glyphs
+        if ("ebook" in self.__args):
+            ebook_name = self.__args.ebook
+        if ("plain" in self.__args):
+            ebook_name = self.__args.plain
+        if (len(font_name) > 0):
+            epub_file_name = self.__get_name_output_file(font_name, suffix=".epub")
+            font_name = os.path.split(font_name)[1]
+            epub_title = "Glyphs in %s" % (font_name)
+        if (len(ebook_name) > 0):
+            epub_file_name = self.__get_name_output_file(ebook_name, suffix=".epub")
+            ebook_name = os.path.split(ebook_name)[1]
+            epub_title = "Characters in %s" % (ebook_name)
+        if ((len(font_name) > 0) and (len(ebook_name) > 0)):
+            epub_title = "Glyphs missing in %s to display %s" % (font_name, ebook_name)
+        from genEPUB import genEPUB
+        generator = genEPUB()
+        generator.createEPUB(dec_codepoint_list, epub_title, epub_file_name)
+        self.__print_info("Created EPUB file '%s'." % (epub_file_name))
 
 
-### BEGIN print_Unicode_info ###
-def print_Unicode_info(char, short):
-    name = unicodedata.name(char, "UNKNOWN")
-    decCodepoint = ord(char)
-    hexCodepoint = hex(decCodepoint)
-    lower = char.lower()
-    upper = char.upper()
-    category = unicodedata.category(char)
-    bidirectional = unicodedata.bidirectional(char)
-    mirrored = True if (unicodedata.mirrored(char) == 1) else False
-    nfc = unicodedata.normalize("NFC", char)
-    nfd = unicodedata.normalize("NFD", char)
 
-    if (short):
-        print(char + "\t" + name + " (U+" + str(hexCodepoint).upper().replace("0X", "") + ")")
-    else:
-        print("Name          " + name)
-        print("Character     " + char)
-        print("Dec Codepoint " + str(decCodepoint))
-        print("Hex Codepoint " + str(hexCodepoint))
-        print("Lowercase     " + lower)
-        print("Uppercase     " + upper)
-        print("Category      " + category)
-        print("Bidirectional " + bidirectional)
-        print("Mirrored      " + str(mirrored))
-        print("NFC           " + nfc)
-        print("NFD           " + nfd)
-### END print_Unicode_info ###
+    def __do_check(self):
+        font_char_list = []
+        ebook_char_list = []
+        missing_char_list = []
+        font_name = ""
+        ebook_name = ""
+        try:
+            if ("font" in self.__args):
+                font_name = self.__args.font
+                font_char_list = self.__get_font_char_list(only_chars=True)
+            if ("glyphs" in self.__args):
+                font_name = self.__args.glyphs
+                font_char_list = self.__get_glyphs_char_list(only_chars=True)
+            if ("ebook" in self.__args):
+                ebook_name = self.__args.ebook
+                ebook_char_list = self.__get_ebook_char_list()
+            if ("plain" in self.__args):
+                ebook_name = self.__args.plain
+                ebook_char_list = self.__get_plain_char_list()
+            missing_char_list = filter(lambda x: (ord(x[0]) > 31) and (x[0] not in font_char_list), ebook_char_list)
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        if (len(missing_char_list) == 0):
+            self.__print_info("Font '%s' contains all the glyphs for displaying ebook '%s'." % (font_name, ebook_name))
+            return CustomParser.EXIT_CODE_OK
+        else:
+            self.__print_info("Font '%s' misses the following glyphs for displaying ebook '%s':" % (font_name, ebook_name))
+            self.__print_char_list(missing_char_list)
+            if ("epub" in self.__args):
+                self.__create_epub(missing_char_list)
+            return CustomParser.EXIT_CODE_MISSING_GLYPHS
+
+    def __do_convert(self):
+        try:
+            font = fontforge.open(self.__args.font)
+            font.selection.all()
+            font.generate(self.__args.output)
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        self.__print_info("Converted font '%s' into font '%s'." % (self.__args.font, self.__args.output))
+        return CustomParser.EXIT_CODE_OK
+
+    def __do_count(self):
+        total = 0
+        try:
+            char_list = []
+            ebook_name = ""
+            if ("ebook" in self.__args):
+                char_list = self.__get_ebook_char_list()
+                ebook_name = self.__args.ebook
+            if ("plain" in self.__args):
+                char_list = self.__get_plain_char_list()
+                ebook_name = self.__args.plain
+            count_list = map(lambda x: x[1], char_list)
+            total = reduce(lambda x, y: x + y, count_list)
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        self.__print_info("Number of characters in '%s':" % (ebook_name))
+        print total
+        return CustomParser.EXIT_CODE_OK
+
+    def __do_list(self):
+        char_list = []
+        msg = ""
+        try:
+            if ("ebook" in self.__args):
+                char_list = self.__get_ebook_char_list()
+                msg = "Characters in '%s':" % (self.__args.ebook)
+            if ("font" in self.__args):
+                char_list = self.__get_font_char_list(only_chars=True)
+                msg = "Glyphs in '%s':" % (self.__args.font)
+            if ("glyphs" in self.__args):
+                char_list = self.__get_glyphs_char_list(only_chars=True)
+                msg = "Glyphs in '%s':" % (self.__args.glyphs)
+            if ("plain" in self.__args):
+                char_list = self.__get_plain_char_list()
+                msg = "Characters in '%s':" % (self.__args.plain)
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        self.__print_info(msg)
+        self.__print_char_list(char_list)
+        if ("epub" in self.__args):
+            self.__create_epub(char_list)
+        return CustomParser.EXIT_CODE_OK
+
+    def __do_lookup(self):
+        try:
+            found = self.__lookup_character()
+            if (len(found) == 0):
+                self.__print_info("No match found for '%s'" % (self.__args.character))
+                return CustomParser.EXIT_CODE_COMMAND_FAILED
+            else:
+                self.__print_info("Matches found for '%s':" % (self.__args.character))
+                for c in found:
+                    self.__print_Unicode_info(c, ("compact" in self.__args))
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        return CustomParser.EXIT_CODE_OK
+
+    def __do_obfuscate(self):
+        try:
+            self.__obfuscate_font()
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        return CustomParser.EXIT_CODE_OK
+
+    def __do_subset(self):
+        font_char_list = []
+        ebook_char_list = []
+        found_char_list = []
+        font_name = ""
+        ebook_name = ""
+        output_font_file = ""
+        try:
+            font_name = self.__args.font
+            font_char_list = self.__get_font_char_list(only_chars=True)
+            if ("ebook" in self.__args):
+                ebook_name = self.__args.ebook
+                ebook_char_list = self.__get_ebook_char_list()
+            if ("plain" in self.__args):
+                ebook_name = self.__args.plain
+                ebook_char_list = self.__get_plain_char_list()
+            font = fontforge.open(self.__args.font)
+            font.selection.none()
+            for c in ebook_char_list:
+                if (c[0] in font_char_list):
+                    font.selection.select(("more", "unicode"), ord(c[0]))
+                    found_char_list.append(c[0])
+            font.selection.invert()
+            font.clear()
+            output_font_file = self.__get_name_output_file(self.__args.font, prefix="subset_")
+            font.generate(output_font_file)
+        except Exception as e:
+            self.__print_error(str(e))
+            return CustomParser.EXIT_CODE_COMMAND_FAILED
+        self.__print_info("Subsetting font '%s' with ebook '%s' into new font '%s', containing the following glyphs:" % (font_name, ebook_name, output_font_file))
+        self.__print_char_list(found_char_list)
+        return CustomParser.EXIT_CODE_OK
+
+    def execute(self):
+        returnCode = CustomParser.EXIT_CODE_OK
+        command = self.__args.command
+
+        if (command == CustomParser.COMMAND_CHECK):
+            returnCode = self.__do_check() 
+
+        if (command == CustomParser.COMMAND_CONVERT):
+            returnCode = self.__do_convert()
+
+        if (command == CustomParser.COMMAND_COUNT):
+            returnCode = self.__do_count()
+
+        if (command == CustomParser.COMMAND_LIST):
+            returnCode = self.__do_list()
+
+        if (command == CustomParser.COMMAND_LOOKUP):
+            returnCode = self.__do_lookup()
+
+        if (command == CustomParser.COMMAND_OBFUSCATE):
+            returnCode = self.__do_obfuscate()
+
+        if (command == CustomParser.COMMAND_SUBSET):
+            returnCode = self.__do_subset()
+
+        return returnCode
 
 
-### BEGIN main ###
+
 def main():
     # read command line parameters
-    options = read_command_line_parameters(sys.argv)
-
-    verbose = False
-    if (('-v' in options) or ('--verbose' in options)):
-        verbose = True
-
-    quiet = False
-    if (('-q' in options) or ('--quiet' in options)):
-        quiet = True
-
-    sortByCodepoint = True
-    if (('-s' in options) or ('--sort' in options)):
-        sortByCodepoint = False
-
-    preserveTags = False
-    if ('--preserve' in options):
-        preserveTags = True
-
-    outputEPUB = False
-    if (('-u' in options) or ('--epub' in options)):
-       outputEPUB  = True
-
-    obfuscationMethodIDPF = True
-    if (('--adobe' in options) and ('--idpf' in options)):
-        print_error("You cannot specify both '%s' and '%s' parameters." % ('--adobe', '--idpf'))
-    if ('--adobe' in options):
-        obfuscationMethodIDPF = False
-    if ('--idpf' in options):
-        obfuscationMethodIDPF = True
-
-    lookupArgument = None
-    fuzzyLookup = False
-    discoverLookup = False
-    if ('-l' in options):
-        lookupArgument = options['-l']
-        fuzzyLookup = False
-        discoverLookup = False
-    if ('--lookup' in options):
-        lookupArgument = options['--lookup']
-        fuzzyLookup = False
-        discoverLookup = False
-    if ('-L' in options):
-        lookupArgument = options['-L']
-        fuzzyLookup = True
-        discoverLookup = False
-    if ('--Lookup' in options):
-        lookupArgument = options['--Lookup']
-        fuzzyLookup = True
-        discoverLookup = False
-    if ('-d' in options):
-        lookupArgument = options['-d']
-        fuzzyLookup = False
-        discoverLookup = True
-    if ('--discover' in options):
-        lookupArgument = options['--discover']
-        fuzzyLookup = False
-        discoverLookup = True
-    if ('-D' in options):
-        lookupArgument = options['-D']
-        fuzzyLookup = True
-        discoverLookup = True
-    if ('--Discover' in options):
-        lookupArgument = options['--Discover']
-        fuzzyLookup = True
-        discoverLookup = True
-
-    countCharacters = False
-    if ('-c' in options) or ('--count' in options):
-        countCharacters = True 
-
-    fontFile = None
-    if ('-f' in options) and ('--font' in options):
-        print_error("You cannot specify both '%s' and '%s' parameters." % ('-f', '--font'))
-    if ('-f' in options):
-        fontFile = options['-f']
-    if ('--font' in options):
-        fontFile = options['--font']
-   
-    glyphsFile = None
-    if ('-g' in options) and ('--glyphs' in options):
-        print_error("You cannot specify both '%s' and '%s' parameters." % ('-g', '--glyphs'))
-    if ('-g' in options):
-        glyphsFile = options['-g']
-    if ('--glyphs' in options):
-        glyphsFile = options['--glyphs']
-
-    if ((fontFile != None) and (glyphsFile != None)):
-        print_error("You cannot specify both a font file and a glyph list file.")
-
-    ebookFile = None
-    if ('-e' in options) and ('--ebook' in options):
-        print_error("You cannot specify both '%s' and '%s' parameters." % ('-e', '--ebook'))
-    if ('-e' in options):
-        ebookFile = options['-e']
-    if ('--ebook' in options):
-        ebookFile = options['--ebook']
-
-    plainFile = None
-    if ('-p' in options) and ('--plain' in options):
-        print_error("You cannot specify both '%s' and '%s' parameters." % ('-p', '--plain'))
-    if ('-p' in options):
-        plainFile = options['-p']
-    if ('--plain' in options):
-        plainFile = options['--plain']
-
-    if ((ebookFile != None) and (plainFile != None)):
-        print_error("You cannot specify both an ebook file and a plain text file.")
-
-    obfuscate = False
-    obfuscatedFontFile = None
-    obfuscationKey = None
-    if ((('-k' in options) or ('--key' in options)) and (fontFile != None)):
-        obfuscate = True
-        if ('-k' in options):
-            obfuscationKey = options['-k']
-        if ('--key' in options):
-            obfuscationKey = options['--key']
-        head, tail = os.path.split(fontFile)
-        obfuscatedFontFile = os.path.join(head, "obf." + tail)
-        if (('-o' in options) or ('--output' in options)):
-            if ('-o' in options) and ('--output' in options):
-                print_error("You cannot specify both '%s' and '%s' parameters." % ('-o', '--output'))
-            if ('-o' in options):
-                obfuscatedFontFile = options['-o']
-            if ('--output' in options):
-                obfuscatedFontFile = options['--output']
-
-    minimize = False
-    minimizedFontFile = None
-    if ((('-m' in options) or ('--minimize' in options)) and (fontFile != None)):
-        minimize = True
-        head, tail = os.path.split(fontFile)
-        minimizedFontFile = os.path.join(head, "min." + tail)    
-   
-    # NOTE this has a side-effect, must go with code refactoring
-    if (('-o' in options) or ('--output' in options)):
-        if ('-o' in options) and ('--output' in options):
-            print_error("You cannot specify both '%s' and '%s' parameters." % ('-o', '--output'))
-        if ('-o' in options):
-            minimizedFontFile = options['-o']
-        if ('--output' in options):
-            minimizedFontFile = options['--output']
-
-
-    # if fontFile, ebookFile, countEbookFile are None, print usage and exit
-    if ( (len(options) == 0) or
-            ('-h' in options) or
-            ('--help' in options) or
-            ((fontFile == None) and
-                (glyphsFile == None) and
-                (ebookFile == None) and
-                (plainFile == None) and
-                (lookupArgument == None)) ):
-        usage()
-        sys.exit(0)
+    args = CustomParser().get_arguments()
     
-    # perform lookup?
-    if (not lookupArgument == None):
-        returnCode = perform_lookup(lookupArgument, fuzzyLookup, discoverLookup, quiet)
-        if (returnCode == 8):
-            print_info("Lookup for '%s' failed" % (lookupArgument), quiet)
-        sys.exit(returnCode)
-
-    # check that the specified file actually exists
-    if ((fontFile != None) and (not check_existence(fontFile))):
-        print_error("Font file '%s' does not exist or it cannot be read." % fontFile)
-   
-    if ((glyphsFile != None) and (not check_existence(glyphsFile))):
-        print_error("List of glyphs file '%s' does not exist or it cannot be read." % glyphsFile)
-
-    if ((ebookFile != None) and (not check_existence(ebookFile))):
-        print_error("Ebook file '%s' does not exist or it cannot be read." % ebookFile)
-
-    if ((plainFile != None) and (not check_existence(plainFile))):
-        print_error("Ebook file '%s' does not exist or it cannot be read." % plainFile)
-
-    # exit code to be returned
-    returnCode = 0
-   
-    # obfuscate/deobfuscate font
-    if ((fontFile != None) and (obfuscatedFontFile != None)):
-        print_info("(De)obfuscating font '%s' into '%s'..." % (fontFile, obfuscatedFontFile), quiet)
-        print_info("(De)obfuscating with %s algorithm" % ("IDPF" if obfuscationMethodIDPF else "Adobe"), quiet)
-        print_info("(De)obfuscating with key '%s'" % (obfuscationKey), quiet)
-        obfuscate_font(fontFile, obfuscationKey, obfuscationMethodIDPF, obfuscatedFontFile)
-        print_info("(De)obfuscating font '%s' into '%s'... Done" % (fontFile, obfuscatedFontFile), quiet)
-        # TODO combine obfuscation with other options 
-        sys.exit(returnCode)
-
-    fontCharList = []
-    # read fontFile
-    if (fontFile != None):
-        print_info("Reading glyphs contained in '%s'..." % (fontFile), quiet)
-        fontCharList = get_font_char_list(fontFile)
-        print_info("Reading glyphs contained in '%s'... Done" % (fontFile), quiet)
-        if (outputEPUB):
-            epub_filename = fontFile + ".epub"
-            print_info("Creating '%s'..." % (epub_filename), quiet)
-            epub_title = "List of Unicode characters in %s" % (fontFile)
-            dec_list = get_dec_list(fontCharList, False)
-            output_epub(dec_list, epub_title, epub_filename)
-            print_info("Creating '%s'... Done" % (epub_filename), quiet)
-
-    # read glyphsFile
-    if (glyphsFile != None):
-        print_info("Reading glyphs contained in '%s'..." % (glyphsFile), quiet)
-        fontCharList = get_glyphs_char_list(glyphsFile)
-        print_info("Reading glyphs contained in '%s'... Done" % (glyphsFile), quiet)
-        if (outputEPUB):
-            epub_filename = glyphsFile + ".epub"
-            print_info("Creating '%s'..." % (epub_filename), quiet)
-            epub_title = "List of Unicode characters in %s" % (glyphsFile)
-            dec_list = get_dec_list(fontCharList, False)
-            output_epub(dec_list, epub_title, epub_filename)
-            print_info("Creating '%s'... Done" % (epub_filename), quiet)
-
-    # read ebookFile
-    ebookCharList = []
-    if (ebookFile != None):
-        print_info("Reading characters appearing in '%s'..." % (ebookFile), quiet)
-        ebookCharList = get_ebook_char_list(ebookFile, preserveTags) 
-        print_info("Reading characters appearing in '%s'... Done" % (ebookFile), quiet)
-        if (countCharacters):
-            print_info("Number of characters appearing in '%s'..." % (ebookFile), quiet)
-            print(str(get_number_characters(ebookCharList)))
-            print_info("Number of characters appearing in '%s'... Done" % (ebookFile), quiet)
-            sys.exit(0)
-        if (outputEPUB):
-            epub_filename = ebookFile + ".epub"
-            print_info("Creating '%s'..." % (epub_filename), quiet)
-            epub_title = "List of Unicode characters in %s" % (ebookFile)
-            dec_list = get_dec_list(ebookCharList, True)
-            output_epub(dec_list, epub_title, epub_filename)
-            print_info("Creating '%s'... Done" % (epub_filename), quiet)
+    # run glyphIgo
+    returnCode = GlyphIgo(args).execute()
     
-    # read plainFile
-    plainCharList = []
-    if (plainFile != None):
-        print_info("Reading characters appearing in '%s'..." % (plainFile), quiet)
-        plainCharList = get_plain_char_list(plainFile, preserveTags)
-        print_info("Reading characters appearing in '%s'... Done" % (plainFile), quiet)
-        if (countCharacters):
-            print_info("Number of characters appearing in '%s'..." % (plainFile), quiet)
-            print(str(get_number_characters(plainCharList)))
-            print_info("Number of characters appearing in '%s'... Done" % (plainFile), quiet)
-            sys.exit(0)
-        if (outputEPUB):
-            epub_filename = plainFile + ".epub"
-            print_info("Creating '%s'..." % (epub_filename), quiet)
-            epub_title = "List of Unicode characters in %s" % (plainFile)
-            dec_list = get_dec_list(plainCharList, True)
-            output_epub(dec_list, epub_title, epub_filename)
-            print_info("Creating '%s'... Done" % (epub_filename), quiet)
-
-    # let's do what we should do
-    comparedWithFont = False
-    missing = []
-    if ((fontFile != None) and (ebookFile != None)):
-        missing = compare(fontCharList, ebookCharList)
-        
-        if (minimize):
-            print_info("Minimizing font '%s' according to the characters appearing in '%s'..." % (fontFile, ebookFile), quiet)
-            minimized_font_list = minimize_font(fontFile, ebookCharList, minimizedFontFile)
-            print_info("Minimizing font '%s' according to the characters appearing in '%s'... Done" % (fontFile, ebookFile), quiet)
-            print_info("Successfully created minimized font '%s'" % (minimizedFontFile), quiet)
-            if (outputEPUB):
-                epub_filename = minimizedFontFile + ".epub"
-                print_info("Creating '%s'..." % (epub_filename), quiet)
-                epub_title = "List of Unicode characters in %s" % (minimizedFontFile)
-                dec_list = get_dec_list(minimized_font_list, False)
-                output_epub(dec_list, epub_title, epub_filename)
-                print_info("Creating '%s'... Done" % (epub_filename), quiet)
-
-        if (len(missing) == 0):
-            print_info("Your font '%s' contains all the glyphs required to display your ebook '%s'" % (fontFile, ebookFile), quiet)
-        else:
-            print_info("Your font '%s' does not contain all the glyphs required to display your ebook '%s'" % (fontFile, ebookFile), quiet)
-            print_info("BEGIN Missing glyphs", quiet)
-            print_char_list(missing, verbose, sortByCodepoint)
-            print_info("END", quiet)
-            if (outputEPUB):
-                epub_filename = "missing.epub"
-                print_info("Creating '%s'..." % (epub_filename), quiet)
-                epub_title = "List of Unicode characters of %s missing in %s" % (ebookFile, fontFile)
-                dec_list = get_dec_list(missing, True)
-                output_epub(dec_list, epub_title, epub_filename)
-                print_info("Creating '%s'... Done" % (epub_filename), quiet)
-            returnCode = 2
-        comparedWithFont = True
-    
-    if ((fontFile != None) and (plainFile != None)):
-        missing = compare(fontCharList, plainCharList)
-        
-        if (minimize):
-            print_info("Minimizing font '%s' according to the characters appearing in '%s'..." % (fontFile, plainFile), quiet)
-            minimized_font_list = minimize_font(fontFile, plainCharList, minimizedFontFile)
-            print_info("Minimizing font '%s' according to the characters appearing in '%s'... Done" % (fontFile, plainFile), quiet)
-            print_info("Successfully created minimized font '%s'" % (minimizedFontFile), quiet)
-            if (outputEPUB):
-                epub_filename = minimizedFontFile + ".epub"
-                print_info("Creating '%s'..." % (epub_filename), quiet)
-                epub_title = "List of Unicode characters in %s" % (minimizedFontFile)
-                dec_list = get_dec_list(minimized_font_list, False)
-                output_epub(dec_list, epub_title, epub_filename)
-                print_info("Creating '%s'... Done" % (epub_filename), quiet)
-
-        if (len(missing) == 0):
-            print_info("Your font '%s' contains all the glyphs required to display your file '%s'" % (fontFile, plainFile), quiet)
-        else:
-            print_info("Your font '%s' does not contain all the glyphs required to display your file '%s'" % (fontFile, plainFile), quiet)
-            print_info("BEGIN Missing glyphs", quiet)
-            print_char_list(missing, verbose, sortByCodepoint)
-            print_info("END", quiet)
-            if (outputEPUB):
-                epub_filename = "missing.epub"
-                print_info("Creating '%s'..." % (epub_filename), quiet)
-                epub_title = "List of Unicode characters of %s missing in %s" % (plainFile, fontFile)
-                dec_list = get_dec_list(missing, True)
-                output_epub(dec_list, epub_title, epub_filename)
-                print_info("Creating '%s'... Done" % (epub_filename), quiet)
-            returnCode = 2
-        comparedWithFont = True
-
-    if (not comparedWithFont):
-        if ((fontFile != None) and (minimizedFontFile != None)):
-            print_info("Converting font '%s' into '%s'..." % (fontFile, minimizedFontFile), quiet)
-            convert_font(fontFile, minimizedFontFile)
-            print_info("Converting font '%s' into '%s'... Done" % (fontFile, minimizedFontFile), quiet)
-        if (fontFile != None):
-            print_info("BEGIN Font file '%s' contains the following Unicode characters" % (fontFile), quiet)
-            print_glyph_list(fontCharList, verbose)
-            print_info("END", quiet)
-        if (glyphsFile != None):
-            print_info("BEGIN Glyph list file '%s' contains the following Unicode characters" % (glyphsFile), quiet)
-            print_glyph_list(fontCharList, verbose)
-            print_info("END", quiet)
-        if (ebookFile != None):
-            print_info("BEGIN Ebook file '%s' contains the following Unicode characters" % (ebookFile), quiet)
-            print_char_list(ebookCharList, verbose, sortByCodepoint)
-            print_info("END", quiet)
-        if (plainFile != None):
-            print_info("BEGIN Plain text file '%s' contains the following Unicode characters" % (plainFile), quiet)
-            print_char_list(plainCharList, verbose, sortByCodepoint)
-            print_info("END", quiet)
-   
-    if (minimizedFontFile != None):
-        if (not check_existence(minimizedFontFile)):
-            print_error("Failed to minimize/convert '%s' into '%s'" % (fontFile, minimizedFontFile), False, 4)
-
     # return proper exit code
     sys.exit(returnCode)
-### END main ###
 
-
-
-if __name__ == '__main__':
-    # TODO let the user specify file encoding instead
-    #Python2#
+if (__name__ == '__main__'):
+    # force UTF-8 encoding
     reload(sys)
-    #Python2#
     sys.setdefaultencoding("utf-8")
     main()
+
+
 

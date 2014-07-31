@@ -2,114 +2,145 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 2.0.3
-* Date: 2014-07-29
+* Version: 3.0.0
+* Date: 2014-07-31
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 * License: the MIT License (MIT), see LICENSE.md
 
-There are nine main usage scenarios:
+There are seven main usage scenarios:
 
-1. list all Unicode characters used in an EPUB file or a plain text UTF-8 file,
-2. list all Unicode glyphs present in a TTF/OTF/WOFF font file,
-3. check whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file,
-4. minimize (subset) a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file,
-5. convert a font file from/to TTF/OTF/WOFF format,
-6. export one of the above lists of Unicode characters as an EPUB file, for quick testing on an eReader,
-7. lookup for information about a given Unicode character, including fuzzy name matching,
-8. count the number of characters in an EPUB file or a plain text UTF-8 file, and
-9. (de)obfuscate a font, with either the IDPF or the Adobe algorithm.
+1. **check** whether a given font file contains all the glyphs needed to properly display the given EPUB or plain text file,
+2. **convert** a font file from/to TTF/OTF/WOFF format,
+3. **count** the number of characters in an EPUB file or a plain text UTF-8 file,
+4. **list** all Unicode characters used in an EPUB file or a plain text UTF-8 file or all Unicode glyphs present in a TTF/OTF/WOFF font file,
+5. **lookup** for information about a given Unicode character, including heuristic name matching,
+6. (de)**obfuscate** a font, with either the IDPF or the Adobe algorithm, and
+7. **subset** a given font file, that is, create a new font file containing only the subset of glyphs of a given font that are contained in a EPUB or plain text file.
 
-### Important updates
+Optionally, you can export a list of Unicode glyphs/characters,
+produced by the above commands,
+as an EPUB file for quick testing on an eReader. 
 
-* 2014-07-30 I plan to **heavily refactor** the code (it is really needed!), and release the result as **v2.1.0**. That version will use `argparse` instead of `getopt`, and _might_ change some of the switch/parameters names.
 
 
 ## Usage
 
 ```
-$ python glyphIgo.py [ARGUMENTS]
+$ python glyphIgo.py check|convert|count|list|lookup|obfuscate|subset [options]
 
-Arguments:
- -h, --help            : print this usage message and exit
- -f, --font <font>     : font file, in TTF/OTF/WOFF format
- -g, --glyphs <list>   : use this list of glyphs instead of opening a font file
- -e, --ebook <ebook>   : ebook in EPUB format
- -p, --plain <ebook>   : ebook file, in plain text UTF-8 format
- -m, --minimize        : retain only the glyphs of <font> that appear in <ebook>
- -k, --key <uid>       : (de)obfuscate <font> using <uid> to compute the obfuscation key
- --adobe               : use Adobe obfuscation algorithm
- --idpf                : use IDPF obfuscation algorithm (default)
- -o, --output <name>   : use <name> for the font to be created
- --preserve            : preserve X(HT)ML tags instead of stripping them away
- -s, --sort            : sort output by character count instead of character codepoint
- -q, --quiet           : quiet output
- -v, --verbose         : verbose output of Unicode codepoints
- -u, --epub            : output an EPUB file containing the Unicode characters in the input file(s)
- -l, --lookup <char>   : lookup Unicode information for character <char>, given as Unicode char or dec/hex code or exact name
- -d, --discover <char> : same as -l, but only print the Unicode char and name
- -L, --Lookup <name>   : lookup Unicode information for character <name>, with fuzzy name lookup (WARNING: very slow!)
- -D, --Discover <name> : same as -L, but only print the Unicode char and name
- -c, --count           : count the number of characters in the text of <ebook> (specified with -e or -p)
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             print version and exit
+  -c CHARACTER, --character CHARACTER
+                        lookup CHARACTER, specified as name, partial name,
+                        dec/hex codepoint, or Unicode character
+  -d DECODE, --decode DECODE
+                        use DECODE encoding to decode the input EBOOK or PLAIN
+                        file
+  -e EBOOK, --ebook EBOOK
+                        ebook file, in EPUB/ZIP format
+  -f FONT, --font FONT  font file, in TTF/OTF/WOFF format
+  -g GLYPHS, --glyphs GLYPHS
+                        font file, specified as a list of decimal Unicode
+                        codepoints contained in plain text file GLYPHS, one
+                        codepoint per line
+  -i ID, --id ID        (de)obfuscate FONT using ID to compute the obfuscation
+                        key
+  -o OUTPUT, --output OUTPUT
+                        create OUTPUT file
+  -p PLAIN, --plain PLAIN
+                        ebook file, in plain text format
+  -q, --quiet           quiet output
+  -s, --sort            sort output by character count instead of character
+                        codepoint
+  -u, --epub            output an EPUB file containing the Unicode characters
+                        in the input file(s)
+  -v, --verbose         verbose output
+  -w, --nohumanreadable
+                        verbose output without human readable messages
+  --adobe               use Adobe obfuscation algorithm
+  --compact             compact lookup output (Unicode character, name, and
+                        codepoint only)
+  --exact               use exact Unicode lookup (default)
+  --full                full lookup output (default)
+  --heuristic           use heuristic Unicode lookup
+  --idpf                use IDPF obfuscation algorithm (default)
+  --preserve            preserve X(HT)ML tags instead of stripping them away
 
-Exit codes:
+exit codes:
+  0 = no error
+  1 = RESERVED
+  2 = invalid command line argument(s)
+  4 = missing glyphs in the font file to correctly display the given ebook or file
+  8 = failure while executing the requested command
 
- 0 = no error / no missing glyphs in the font file
- 1 = invalid argument(s) error
- 2 = missing glyphs in the font file to correctly display the given file/ebook
- 4 = minimization/conversion failed
- 8 = lookup failed
 ```
 
 ### Examples
 
 ```
-  1. Print this usage message
-     $ python glyphIgo.py -h
+   1. Print this usage message
+      $ python glyphIgo.py -h
 
-  2. Print the list of glyphs in font.ttf
-     $ python glyphIgo.py -f font.ttf
+   2. Check whether all the characters in ebook.epub can be displayed by font.ttf
+      $ python glyphIgo.py check -f font.ttf -e ebook.epub
 
-  3. Print the list of characters in ebook.epub
-     $ python glyphIgo.py -e ebook.epub
+   3. As above, but use font_glyph_list.txt containing a list of decimal codepoints for the font glyphs
+      $ python glyphIgo.py check -g font_glyph_list.txt -e ebook.epub
 
-  4. Print the list of characters in page.xhtml
-     $ python glyphIgo.py -p page.xhtml
+   4. As above, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint
+      $ python glyphIgo.py check -f font.ttf -e ebook.epub -s
 
-  5. Check whether all the characters in ebook.epub can be displayed by font.ttf
-     $ python glyphIgo.py -f font.ttf -e ebook.epub
+   5. As above, but also create missing.epub containing the list of missing Unicode characters
+      $ python glyphIgo.py check -f font.ttf -e ebook.epub -u -o missing.epub
 
-  6. As above, but use font_glyph_list.txt containing a list of decimal codepoints for the font glyphs
-     $ python glyphIgo.py -g font_glyph_list.txt -e ebook.epub
+   6. Convert font.ttf (TTF) into font.otf (OTF)
+      $ python glyphIgo.py convert -f font.ttf -o font.otf
 
-  7. As in Example 5, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint
-     $ python glyphIgo.py -f font.ttf -e ebook.epub -s
+   7. Count the number of characters in ebook.epub
+      $ python glyphIgo.py count -e ebook.epub
 
-  8. Create min.font.otf containing only the glyphs of font.ttf that also appear in ebook.epub
-     $ python glyphIgo.py -m -f font.ttf -e ebook.epub -o min.font.otf
+   8. As above, but preserve tags
+      $ python glyphIgo.py count -e ebook.epub --preserve
 
-  9. Convert font.ttf (TTF) into font.otf (OTF)
-     $ python glyphIgo.py -f font.ttf -o font.otf
+   9. Print the list of glyphs in font.ttf
+      $ python glyphIgo.py list -f font.ttf
 
- 10. As in Example 3, but also create ebook.epub.epub containing the list of Unicode characters
-     $ python glyphIgo.py -e ebook.epub -u
+  10. As above, but just output the decimal codepoints
+      $ python glyphIgo.py list -f font.ttf -q
 
- 11. As in Example 5, but also create missing.epub containing the list of missing Unicode characters
-     $ python glyphIgo.py -f font.ttf -e ebook.epub -u
+  11. Print the list of characters in ebook.epub
+      $ python glyphIgo.py list -e ebook.epub
 
- 12. Lookup for information for Unicode character
-     $ python glyphIgo.py -l d8253
-     $ python glyphIgo.py -l x203d
-     $ python glyphIgo.py -l ‽
-     $ python glyphIgo.py -l "INTERROBANG"
+  12. As above, but also create list.epub containing the list of Unicode characters
+      $ python glyphIgo.py list -e ebook.epub -u -o list.epub
 
- 13. Count the number of characters in ebook.epub
-     $ python glyphIgo.py -c -e ebook.epub
+  13. Print the list of characters in page.xhtml
+      $ python glyphIgo.py list -p page.xhtml
 
- 14. Fuzzy lookup for information for Unicode characters which are Greek omega letters with oxia
-     $ python glyphIgo.py -L "GREEK OMEGA OXIA"
+  14. Lookup for information for Unicode character
+      $ python glyphIgo.py lookup -c d8253
+      $ python glyphIgo.py lookup -c x203d
+      $ python glyphIgo.py lookup -c ‽
+      $ python glyphIgo.py lookup -c "INTERROBANG"
 
- 15. (De)obfuscate font.otf using the given key and the IDPF algorithm
-     $ python glyphIgo.py -f font.otf -k "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd"
+  15. As above, but print compact output
+      $ python glyphIgo.py lookup --compact -c d8253
+      $ python glyphIgo.py lookup --compact -c x203d
+      $ python glyphIgo.py lookup --compact -c ‽
+      $ python glyphIgo.py lookup --compact -c "INTERROBANG"
+
+  16. Heuristic lookup for information for Unicode characters which are Greek omega letters with oxia
+      $ python glyphIgo.py lookup --heuristic -c "GREEK OMEGA OXIA"
+
+  17. (De)obfuscate font.otf into obf.font.otf using the given id and the IDPF algorithm
+      $ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf
+
+  18. As above, but use Adobe algorithm
+      $ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf --adobe
+
+  19. Subset font.ttf into min.font.otf by copying only the glyphs appearing in ebook.epub
+      $ python glyphIgo.py subset -f font.ttf -e ebook.epub -o min.font.otf
 ```
 
 Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
@@ -140,21 +171,24 @@ Please observe that these approximations err on the "conservative" side, possibl
 
 You can also pass a ZIP archive, containing several XHTML/HTML/XML pages, using the `-e` switch.
 
-**glyphIgo** assumes that all files are encoded in UTF-8.
+By default, **glyphIgo** assumes that all files are encoded in UTF-8.
+You can change the encoding used while decoding plain text files
+by specifying the `-d` (or `--decode`) parameter.
 
 Conversion from entity (named or not) to Unicode codepoint is supported.
 
-Unfortunately, there is no `python-fontforge` module for Python 3 in the stable Debian repo (as of 2014-03-07), so you must use Python 2.7 (or later Python 2.x) to run **glyphIgo**. In the source code I have already commented the places where changes will be required to port **glyphIgo** to Python 3.
+Unfortunately, there is no `python-fontforge` module for Python 3 in the stable Debian repo (as of 2014-03-07), so you must use Python 2.7 (or later Python 2.x) to run **glyphIgo**.
 
 To use `-u` or `--epub` switch, you also need to download `genEPUB.py` and put it into the same directory of `glyphIgo.py`.
 
 
 ## Limitations and Missing Features 
 
-* Let the user specify the source file encoding
 * Support for Unicode modifiers
 * Full EPUB parsing
 * Font obfuscation: parse the uid directly from a given EPUB
+* Support for autocompleting via `argcomplete`
+* Shortcuts (e.g., `"-C" == "count -e"`)
 
 
 ## Trivia
@@ -170,3 +204,4 @@ Instead, the name comes from `glyph` and `figo` (Italian slang for `cool`).
 I needed to perform the "font checking" on nearly 100,000 EPUB files at once, for a large project. Then, I felt bad having this little piece of code sitting idly, so I decided to publish it on Google Code. In March 2014, I moved it to GitHub.
 
 [![Analytics](https://ga-beacon.appspot.com/UA-52776738-1/glyphIgo)](http://www.albertopettarin.it)
+
