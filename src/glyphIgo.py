@@ -1109,6 +1109,8 @@ class GlyphIgo:
             ebook_name = self.__args.ebook
         if ("plain" in self.__args):
             ebook_name = self.__args.plain
+        if ("range" in self.__args):
+            ebook_name = self.__args.range   
         if (len(font_name) > 0):
             epub_file_name = self.__get_name_output_file(font_name, suffix=".epub")
             font_name = os.path.split(font_name)[1]
