@@ -4,13 +4,14 @@
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v3.0.0'
-__date__        = '2014-07-31'
+__version__     = 'v3.0.1'
+__date__        = '2014-10-08'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 3.0.1 2014-10-08 Better hex/dec char lookup, added range option to list command
 # 3.0.0 2014-07-31 Heavy code refactoring, switched to argparse, changed CLI names
 # 2.0.3 2014-07-29 Font obfuscation/deobfuscation
 # 2.0.2 2014-04-18 Fixed bug #3
@@ -79,7 +80,7 @@ class CustomParser:
         COMMAND_CHECK: [ ["ebook", "plain"], ["font", "glyphs"] ],
         COMMAND_CONVERT: [ ["font"], ["output"] ],
         COMMAND_COUNT: [ ["ebook", "plain"] ],
-        COMMAND_LIST: [ ["ebook", "font", "glyphs", "plain"] ],
+        COMMAND_LIST: [ ["blocks", "ebook", "font", "glyphs", "plain", "range"] ],
         COMMAND_LOOKUP: [ ["character"] ],
         COMMAND_OBFUSCATE: [ ["font"], ["id"] ],
         COMMAND_SUBSET: [ ["ebook", "plain"], ["font"] ]
@@ -141,12 +142,20 @@ class CustomParser:
             "cmd": ["list -p page.xhtml"]
         },
         {
+            "msg": "Print the list of characters in the range 0x2200-0x22ff (Mathematical Operators)",
+            "cmd": ["list -r 0x2200-0x22ff", "list -r \"Mathematical Operators\""]
+        },
+        {
+            "msg": "Print the range and name of Unicode blocks",
+            "cmd": ["list --blocks"]
+        },
+        {
             "msg": "Lookup for information for Unicode character",
-            "cmd": ["lookup -c d8253", "lookup -c x203d", "lookup -c ‽", "lookup -c \"INTERROBANG\""]
+            "cmd": ["lookup -c 8253", "lookup -c 0x203d", "lookup -c ‽", "lookup -c \"INTERROBANG\""]
         },
         {
             "msg": "As above, but print compact output",
-            "cmd": ["lookup --compact -c d8253", "lookup --compact -c x203d", "lookup --compact -c ‽", "lookup --compact -c \"INTERROBANG\""]
+            "cmd": ["lookup --compact -c 8253", "lookup --compact -c 0x203d", "lookup --compact -c ‽", "lookup --compact -c \"INTERROBANG\""]
         },
         {
             "msg": "Heuristic lookup for information for Unicode characters which are Greek omega letters with oxia",
@@ -248,6 +257,12 @@ class CustomParser:
             "action": "store"
         },
         {
+            "short": "-r",
+            "long": "--range",
+            "help": "range, in '0x????-0x????' or '????-????' format",
+            "action": "store"
+        },
+        {
             "short": "-q",
             "long": "--quiet",
             "help": "quiet output",
@@ -281,6 +296,12 @@ class CustomParser:
             "short": None,
             "long": "--adobe",
             "help": "use Adobe obfuscation algorithm",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--blocks",
+            "help": "print range and name of Unicode blocks",
             "action": "store_true"
         },
         {
@@ -322,8 +343,8 @@ class CustomParser:
     ]
 
     OPTIONAL_PARAMETERS_CONFLICTS = [
-        [ "character", "ebook", "plain" ],
-        [ "character", "font", "glyphs" ],
+        [ "blocks", "character", "ebook", "plain", "range" ],
+        [ "blocks", "character", "font", "glyphs", "range" ],
         [ "quiet", "verbose", "nohumanreadable" ],
         [ "adobe", "idpf" ],
         [ "compact", "full" ],
@@ -469,6 +490,274 @@ class CustomParser:
 
 
 class GlyphIgo:
+
+    # match 0x???? or x???? or ????
+    PATTERN_HEX_0x = r"^0x[0-9A-Fa-f]+$"
+    PATTERN_HEX_x = r"^x[0-9A-Fa-f]+$"
+    PATTERN_DEC = r"^[0-9]+$"
+
+    # match ranges: 0x????-0x???? or x????-x???? or ????-????
+    PATTERN_RANGE_HEX_0x = r"^0x([0-9A-Fa-f]+)-0x([0-9A-Fa-f]+)$"
+    PATTERN_RANGE_HEX_x = r"^x([0-9A-Fa-f]+)-x([0-9A-Fa-f]+)$"
+    PATTERN_RANGE_DEC = r"^([0-9]+)-([0-9]+)$"
+
+    # Unicode blocks from http://www.unicode.org/Public/UNIDATA/Blocks.txt
+    # see also the Unicode Terms of Use http://www.unicode.org/copyright.html
+    UNICODE_BLOCKS = [
+        ["0000", "007f", "Basic Latin"],
+        ["0080", "00ff", "Latin-1 Supplement"],
+        ["0100", "017f", "Latin Extended-A"],
+        ["0180", "024f", "Latin Extended-B"],
+        ["0250", "02af", "IPA Extensions"],
+        ["02b0", "02ff", "Spacing Modifier Letters"],
+        ["0300", "036f", "Combining Diacritical Marks"],
+        ["0370", "03ff", "Greek and Coptic"],
+        ["0400", "04ff", "Cyrillic"],
+        ["0500", "052f", "Cyrillic Supplement"],
+        ["0530", "058f", "Armenian"],
+        ["0590", "05ff", "Hebrew"],
+        ["0600", "06ff", "Arabic"],
+        ["0700", "074f", "Syriac"],
+        ["0750", "077f", "Arabic Supplement"],
+        ["0780", "07bf", "Thaana"],
+        ["07c0", "07ff", "NKo"],
+        ["0800", "083f", "Samaritan"],
+        ["0840", "085f", "Mandaic"],
+        ["08a0", "08ff", "Arabic Extended-A"],
+        ["0900", "097f", "Devanagari"],
+        ["0980", "09ff", "Bengali"],
+        ["0a00", "0a7f", "Gurmukhi"],
+        ["0a80", "0aff", "Gujarati"],
+        ["0b00", "0b7f", "Oriya"],
+        ["0b80", "0bff", "Tamil"],
+        ["0c00", "0c7f", "Telugu"],
+        ["0c80", "0cff", "Kannada"],
+        ["0d00", "0d7f", "Malayalam"],
+        ["0d80", "0dff", "Sinhala"],
+        ["0e00", "0e7f", "Thai"],
+        ["0e80", "0eff", "Lao"],
+        ["0f00", "0fff", "Tibetan"],
+        ["1000", "109f", "Myanmar"],
+        ["10a0", "10ff", "Georgian"],
+        ["1100", "11ff", "Hangul Jamo"],
+        ["1200", "137f", "Ethiopic"],
+        ["1380", "139f", "Ethiopic Supplement"],
+        ["13a0", "13ff", "Cherokee"],
+        ["1400", "167f", "Unified Canadian Aboriginal Syllabics"],
+        ["1680", "169f", "Ogham"],
+        ["16a0", "16ff", "Runic"],
+        ["1700", "171f", "Tagalog"],
+        ["1720", "173f", "Hanunoo"],
+        ["1740", "175f", "Buhid"],
+        ["1760", "177f", "Tagbanwa"],
+        ["1780", "17ff", "Khmer"],
+        ["1800", "18af", "Mongolian"],
+        ["18b0", "18ff", "Unified Canadian Aboriginal Syllabics Extended"],
+        ["1900", "194f", "Limbu"],
+        ["1950", "197f", "Tai Le"],
+        ["1980", "19df", "New Tai Lue"],
+        ["19e0", "19ff", "Khmer Symbols"],
+        ["1a00", "1a1f", "Buginese"],
+        ["1a20", "1aaf", "Tai Tham"],
+        ["1ab0", "1aff", "Combining Diacritical Marks Extended"],
+        ["1b00", "1b7f", "Balinese"],
+        ["1b80", "1bbf", "Sundanese"],
+        ["1bc0", "1bff", "Batak"],
+        ["1c00", "1c4f", "Lepcha"],
+        ["1c50", "1c7f", "Ol Chiki"],
+        ["1cc0", "1ccf", "Sundanese Supplement"],
+        ["1cd0", "1cff", "Vedic Extensions"],
+        ["1d00", "1d7f", "Phonetic Extensions"],
+        ["1d80", "1dbf", "Phonetic Extensions Supplement"],
+        ["1dc0", "1dff", "Combining Diacritical Marks Supplement"],
+        ["1e00", "1eff", "Latin Extended Additional"],
+        ["1f00", "1fff", "Greek Extended"],
+        ["2000", "206f", "General Punctuation"],
+        ["2070", "209f", "Superscripts and Subscripts"],
+        ["20a0", "20cf", "Currency Symbols"],
+        ["20d0", "20ff", "Combining Diacritical Marks for Symbols"],
+        ["2100", "214f", "Letterlike Symbols"],
+        ["2150", "218f", "Number Forms"],
+        ["2190", "21ff", "Arrows"],
+        ["2200", "22ff", "Mathematical Operators"],
+        ["2300", "23ff", "Miscellaneous Technical"],
+        ["2400", "243f", "Control Pictures"],
+        ["2440", "245f", "Optical Character Recognition"],
+        ["2460", "24ff", "Enclosed Alphanumerics"],
+        ["2500", "257f", "Box Drawing"],
+        ["2580", "259f", "Block Elements"],
+        ["25a0", "25ff", "Geometric Shapes"],
+        ["2600", "26ff", "Miscellaneous Symbols"],
+        ["2700", "27bf", "Dingbats"],
+        ["27c0", "27ef", "Miscellaneous Mathematical Symbols-A"],
+        ["27f0", "27ff", "Supplemental Arrows-A"],
+        ["2800", "28ff", "Braille Patterns"],
+        ["2900", "297f", "Supplemental Arrows-B"],
+        ["2980", "29ff", "Miscellaneous Mathematical Symbols-B"],
+        ["2a00", "2aff", "Supplemental Mathematical Operators"],
+        ["2b00", "2bff", "Miscellaneous Symbols and Arrows"],
+        ["2c00", "2c5f", "Glagolitic"],
+        ["2c60", "2c7f", "Latin Extended-C"],
+        ["2c80", "2cff", "Coptic"],
+        ["2d00", "2d2f", "Georgian Supplement"],
+        ["2d30", "2d7f", "Tifinagh"],
+        ["2d80", "2ddf", "Ethiopic Extended"],
+        ["2de0", "2dff", "Cyrillic Extended-A"],
+        ["2e00", "2e7f", "Supplemental Punctuation"],
+        ["2e80", "2eff", "CJK Radicals Supplement"],
+        ["2f00", "2fdf", "Kangxi Radicals"],
+        ["2ff0", "2fff", "Ideographic Description Characters"],
+        ["3000", "303f", "CJK Symbols and Punctuation"],
+        ["3040", "309f", "Hiragana"],
+        ["30a0", "30ff", "Katakana"],
+        ["3100", "312f", "Bopomofo"],
+        ["3130", "318f", "Hangul Compatibility Jamo"],
+        ["3190", "319f", "Kanbun"],
+        ["31a0", "31bf", "Bopomofo Extended"],
+        ["31c0", "31ef", "CJK Strokes"],
+        ["31f0", "31ff", "Katakana Phonetic Extensions"],
+        ["3200", "32ff", "Enclosed CJK Letters and Months"],
+        ["3300", "33ff", "CJK Compatibility"],
+        ["3400", "4dbf", "CJK Unified Ideographs Extension A"],
+        ["4dc0", "4dff", "Yijing Hexagram Symbols"],
+        ["4e00", "9fff", "CJK Unified Ideographs"],
+        ["a000", "a48f", "Yi Syllables"],
+        ["a490", "a4cf", "Yi Radicals"],
+        ["a4d0", "a4ff", "Lisu"],
+        ["a500", "a63f", "Vai"],
+        ["a640", "a69f", "Cyrillic Extended-B"],
+        ["a6a0", "a6ff", "Bamum"],
+        ["a700", "a71f", "Modifier Tone Letters"],
+        ["a720", "a7ff", "Latin Extended-D"],
+        ["a800", "a82f", "Syloti Nagri"],
+        ["a830", "a83f", "Common Indic Number Forms"],
+        ["a840", "a87f", "Phags-pa"],
+        ["a880", "a8df", "Saurashtra"],
+        ["a8e0", "a8ff", "Devanagari Extended"],
+        ["a900", "a92f", "Kayah Li"],
+        ["a930", "a95f", "Rejang"],
+        ["a960", "a97f", "Hangul Jamo Extended-A"],
+        ["a980", "a9df", "Javanese"],
+        ["a9e0", "a9ff", "Myanmar Extended-B"],
+        ["aa00", "aa5f", "Cham"],
+        ["aa60", "aa7f", "Myanmar Extended-A"],
+        ["aa80", "aadf", "Tai Viet"],
+        ["aae0", "aaff", "Meetei Mayek Extensions"],
+        ["ab00", "ab2f", "Ethiopic Extended-A"],
+        ["ab30", "ab6f", "Latin Extended-E"],
+        ["abc0", "abff", "Meetei Mayek"],
+        ["ac00", "d7af", "Hangul Syllables"],
+        ["d7b0", "d7ff", "Hangul Jamo Extended-B"],
+        ["d800", "db7f", "High Surrogates"],
+        ["db80", "dbff", "High Private Use Surrogates"],
+        ["dc00", "dfff", "Low Surrogates"],
+        ["e000", "f8ff", "Private Use Area"],
+        ["f900", "faff", "CJK Compatibility Ideographs"],
+        ["fb00", "fb4f", "Alphabetic Presentation Forms"],
+        ["fb50", "fdff", "Arabic Presentation Forms-A"],
+        ["fe00", "fe0f", "Variation Selectors"],
+        ["fe10", "fe1f", "Vertical Forms"],
+        ["fe20", "fe2f", "Combining Half Marks"],
+        ["fe30", "fe4f", "CJK Compatibility Forms"],
+        ["fe50", "fe6f", "Small Form Variants"],
+        ["fe70", "feff", "Arabic Presentation Forms-B"],
+        ["ff00", "ffef", "Halfwidth and Fullwidth Forms"],
+        ["fff0", "ffff", "Specials"],
+        ["10000", "1007f", "Linear B Syllabary"],
+        ["10080", "100ff", "Linear B Ideograms"],
+        ["10100", "1013f", "Aegean Numbers"],
+        ["10140", "1018f", "Ancient Greek Numbers"],
+        ["10190", "101cf", "Ancient Symbols"],
+        ["101d0", "101ff", "Phaistos Disc"],
+        ["10280", "1029f", "Lycian"],
+        ["102a0", "102df", "Carian"],
+        ["102e0", "102ff", "Coptic Epact Numbers"],
+        ["10300", "1032f", "Old Italic"],
+        ["10330", "1034f", "Gothic"],
+        ["10350", "1037f", "Old Permic"],
+        ["10380", "1039f", "Ugaritic"],
+        ["103a0", "103df", "Old Persian"],
+        ["10400", "1044f", "Deseret"],
+        ["10450", "1047f", "Shavian"],
+        ["10480", "104af", "Osmanya"],
+        ["10500", "1052f", "Elbasan"],
+        ["10530", "1056f", "Caucasian Albanian"],
+        ["10600", "1077f", "Linear A"],
+        ["10800", "1083f", "Cypriot Syllabary"],
+        ["10840", "1085f", "Imperial Aramaic"],
+        ["10860", "1087f", "Palmyrene"],
+        ["10880", "108af", "Nabataean"],
+        ["10900", "1091f", "Phoenician"],
+        ["10920", "1093f", "Lydian"],
+        ["10980", "1099f", "Meroitic Hieroglyphs"],
+        ["109a0", "109ff", "Meroitic Cursive"],
+        ["10a00", "10a5f", "Kharoshthi"],
+        ["10a60", "10a7f", "Old South Arabian"],
+        ["10a80", "10a9f", "Old North Arabian"],
+        ["10ac0", "10aff", "Manichaean"],
+        ["10b00", "10b3f", "Avestan"],
+        ["10b40", "10b5f", "Inscriptional Parthian"],
+        ["10b60", "10b7f", "Inscriptional Pahlavi"],
+        ["10b80", "10baf", "Psalter Pahlavi"],
+        ["10c00", "10c4f", "Old Turkic"],
+        ["10e60", "10e7f", "Rumi Numeral Symbols"],
+        ["11000", "1107f", "Brahmi"],
+        ["11080", "110cf", "Kaithi"],
+        ["110d0", "110ff", "Sora Sompeng"],
+        ["11100", "1114f", "Chakma"],
+        ["11150", "1117f", "Mahajani"],
+        ["11180", "111df", "Sharada"],
+        ["111e0", "111ff", "Sinhala Archaic Numbers"],
+        ["11200", "1124f", "Khojki"],
+        ["112b0", "112ff", "Khudawadi"],
+        ["11300", "1137f", "Grantha"],
+        ["11480", "114df", "Tirhuta"],
+        ["11580", "115ff", "Siddham"],
+        ["11600", "1165f", "Modi"],
+        ["11680", "116cf", "Takri"],
+        ["118a0", "118ff", "Warang Citi"],
+        ["11ac0", "11aff", "Pau Cin Hau"],
+        ["12000", "123ff", "Cuneiform"],
+        ["12400", "1247f", "Cuneiform Numbers and Punctuation"],
+        ["13000", "1342f", "Egyptian Hieroglyphs"],
+        ["16800", "16a3f", "Bamum Supplement"],
+        ["16a40", "16a6f", "Mro"],
+        ["16ad0", "16aff", "Bassa Vah"],
+        ["16b00", "16b8f", "Pahawh Hmong"],
+        ["16f00", "16f9f", "Miao"],
+        ["1b000", "1b0ff", "Kana Supplement"],
+        ["1bc00", "1bc9f", "Duployan"],
+        ["1bca0", "1bcaf", "Shorthand Format Controls"],
+        ["1d000", "1d0ff", "Byzantine Musical Symbols"],
+        ["1d100", "1d1ff", "Musical Symbols"],
+        ["1d200", "1d24f", "Ancient Greek Musical Notation"],
+        ["1d300", "1d35f", "Tai Xuan Jing Symbols"],
+        ["1d360", "1d37f", "Counting Rod Numerals"],
+        ["1d400", "1d7ff", "Mathematical Alphanumeric Symbols"],
+        ["1e800", "1e8df", "Mende Kikakui"],
+        ["1ee00", "1eeff", "Arabic Mathematical Alphabetic Symbols"],
+        ["1f000", "1f02f", "Mahjong Tiles"],
+        ["1f030", "1f09f", "Domino Tiles"],
+        ["1f0a0", "1f0ff", "Playing Cards"],
+        ["1f100", "1f1ff", "Enclosed Alphanumeric Supplement"],
+        ["1f200", "1f2ff", "Enclosed Ideographic Supplement"],
+        ["1f300", "1f5ff", "Miscellaneous Symbols and Pictographs"],
+        ["1f600", "1f64f", "Emoticons"],
+        ["1f650", "1f67f", "Ornamental Dingbats"],
+        ["1f680", "1f6ff", "Transport and Map Symbols"],
+        ["1f700", "1f77f", "Alchemical Symbols"],
+        ["1f780", "1f7ff", "Geometric Shapes Extended"],
+        ["1f800", "1f8ff", "Supplemental Arrows-C"],
+        ["20000", "2a6df", "CJK Unified Ideographs Extension B"],
+        ["2a700", "2b73f", "CJK Unified Ideographs Extension C"],
+        ["2b740", "2b81f", "CJK Unified Ideographs Extension D"],
+        ["2f800", "2fa1f", "CJK Compatibility Ideographs Supplement"],
+        ["e0000", "e007f", "Tags"],
+        ["e0100", "e01ef", "Variation Selectors Supplement"],
+        ["f0000", "fffff", "Supplementary Private Use Area-A"],
+        ["100000", "10ffff", "Supplementary Private Use Area-B"],
+    ]
+
     __args = None
 
     def __init__(self, args):
@@ -541,6 +830,39 @@ class GlyphIgo:
         f.close()
         return self.__clean_text(text)
 
+    def __get_range_char_list(self):
+        query = self.__args.range.lower()
+        
+        opt = [
+                [self.PATTERN_RANGE_HEX_0x, 16], 
+                [self.PATTERN_RANGE_HEX_x, 16], 
+                [self.PATTERN_RANGE_DEC, 10]
+              ]
+
+        for o in opt:
+            m = re.match(o[0], query)
+            if (m != None):
+                start = int(m.group(1), o[1])
+                stop = int(m.group(2), o[1])
+                return self.__get_range(start, stop)
+       
+        # lookup for Unicode block name
+        for b in self.UNICODE_BLOCKS:
+            if (b[2].lower() == query):
+                start = int(b[0], 16)
+                stop = int(b[1], 16)
+                return self.__get_range(start, stop)
+
+        return []
+
+    # helper: generate a list of Unicode characters
+    # whose codepoint is between start and stop
+    def __get_range(self, start, stop):
+        chars = []
+        for i in range(start, stop + 1):
+            chars.append([unichr(i), 1])
+        return chars
+
     # helper: clean text and produce a list of character,
     # each with its number of occurrences
     def __clean_text(self, text):
@@ -602,7 +924,13 @@ class GlyphIgo:
         text = decode_xml_entities(text)
         chars = filter_string(text)
         return chars
-    
+   
+    # helper: pretty print Unicode blocks list
+    def __print_block_list(self):
+        self.__print_info("Range\tStart\tStop\tStart\tStop\tName")
+        for b in self.UNICODE_BLOCKS:
+            print "0x%s-0x%s\t0x%s\t0x%s\t%s\t%s\t%s" % (b[0], b[1], b[0], b[1], int(b[0], 16), int(b[1], 16), b[2])
+
     # helper: pretty print char list
     def __print_char_list(self, chars):
         def escape(s):
@@ -755,15 +1083,15 @@ class GlyphIgo:
             if (len(query) == 1):
                 # Unicode char
                 results = [ u"" + query ]
-            elif ((query[0] == "d") or (query[0] == "x")):
-                # codepoint
-                if (query[0] == "d"):
-                    # decimal
-                    codepoint = int(query[1:])
-                else:
-                    # hex
-                    codepoint = int(query[1:], 16)
-                results = [ unichr(codepoint) ]
+            elif (re.match(self.PATTERN_HEX_0x, query) != None):
+                # hex
+                results = [ unichr(int(query[2:], 16)) ]
+            elif (re.match(self.PATTERN_HEX_x, query) != None):
+                # hex
+                results = [ unichr(int(query[1:], 16)) ]
+            elif (re.match(self.PATTERN_DEC, query) != None):
+                # decimal
+                results = [ unichr(int(query)) ]
             else: 
                 # exact name
                 results = [ unicodedata.lookup(query) ]
@@ -866,6 +1194,11 @@ class GlyphIgo:
         char_list = []
         msg = ""
         try:
+            if ("blocks" in self.__args):
+                msg = "Unicode Blocks"
+                self.__print_info(msg)
+                self.__print_block_list()
+                return CustomParser.EXIT_CODE_OK
             if ("ebook" in self.__args):
                 char_list = self.__get_ebook_char_list()
                 msg = "Characters in '%s':" % (self.__args.ebook)
@@ -878,6 +1211,9 @@ class GlyphIgo:
             if ("plain" in self.__args):
                 char_list = self.__get_plain_char_list()
                 msg = "Characters in '%s':" % (self.__args.plain)
+            if ("range" in self.__args):
+                char_list = self.__get_range_char_list()
+                msg = "Characters in range '%s':" % (self.__args.range)
         except Exception as e:
             self.__print_error(str(e))
             return CustomParser.EXIT_CODE_COMMAND_FAILED
