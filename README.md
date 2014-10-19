@@ -2,8 +2,8 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 3.0.1
-* Date: 2014-10-08
+* Version: 3.0.2
+* Date: 2014-10-19
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 * License: the MIT License (MIT), see LICENSE.md
 
