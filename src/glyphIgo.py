@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# PYTHON_ARGCOMPLETE_OK
 
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
 __copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v3.0.1'
-__date__        = '2014-10-08'
+__version__     = 'v3.0.2'
+__date__        = '2014-10-19'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 3.0.2 2014-10-19 Support for bash/zsh autocompletion via argcomplete
 # 3.0.1 2014-10-08 Better hex/dec char lookup, added range option to list command
 # 3.0.0 2014-07-31 Heavy code refactoring, switched to argparse, changed CLI names
 # 2.0.3 2014-07-29 Font obfuscation/deobfuscation
@@ -42,7 +44,12 @@ __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPU
 ### END changelog ###
 
 
-#import argcomplete
+
+try:
+    import argcomplete
+except ImportError:
+    pass 
+
 import argparse
 import codecs
 import collections
@@ -418,7 +425,7 @@ class CustomParser:
                 n = trailing_characters + " " * (tot - len(n)) + n
                 s += n + number_separator + msg + "\n"
                 for c in cmd:
-                    s += trailing_characters + (" " * (tot + len(number_separator))) + "$ python " + sys.argv[0] + " " + c + "\n"
+                    s += trailing_characters + (" " * (tot + len(number_separator))) + "$ " + sys.argv[0] + " " + c + "\n"
                 s += "\n"
             else:
                 s += trailing_characters + "\n"
@@ -429,7 +436,7 @@ class CustomParser:
         return self.OPTIONAL_PARAMETERS
 
     def __get_usage(self):
-        return "$ python " + sys.argv[0] + " " + "|".join(self.COMMAND_ALL) + " [options]"
+        return "$ " + sys.argv[0] + " " + "|".join(self.COMMAND_ALL) + " [options]"
 
     def __get_version(self):
         return self.VERSION
@@ -476,7 +483,13 @@ class CustomParser:
                     default=argparse.SUPPRESS
                 )
 
-        # TODO investigate argcomplete.autocomplete(parser)
+        # try using argcomplete
+        try:
+            argcomplete.autocomplete(parser)
+        except:
+            pass 
+       
+        # parse arguments
         args = parser.parse_args()
         
         # standard ArgumentParser checker is cumbersome and limited

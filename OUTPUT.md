@@ -3,7 +3,7 @@
 ## Print the list of glyphs in `font.ttf`
 
 ```
-$ python glyphIgo.py list -f font.ttf
+$ ./glyphIgo.py list -f font.ttf
 
 [INFO] Glyphs in 'font.ttf':
 ' '	32	0x20	SPACE
@@ -226,7 +226,7 @@ $ python glyphIgo.py list -f font.ttf
 ## Print the list of characters in `ebook.epub`
 
 ```
-$ python glyphIgo.py list -e ebook.epub
+$ ./glyphIgo.py list -e ebook.epub
 
 [INFO] Characters in 'ebook.epub':
 '\t'	9	0x9	UNKNOWN NAME	3
@@ -334,7 +334,7 @@ $ python glyphIgo.py list -e ebook.epub
 ## As in the previous example, but sort characters by count
 
 ```
-$ python glyphIgo.py list -e ebook.epub -s
+$ ./glyphIgo.py list -e ebook.epub -s
 
 [INFO] Characters in 'ebook.epub':
 ' '	32	0x20	SPACE	220917
@@ -442,7 +442,7 @@ $ python glyphIgo.py list -e ebook.epub -s
 ## As in the previous example, but also generate an EPUB file (`test_ebook.epub`) containing the list of Unicode characters in `ebook.epub`
 
 ```
-$ python glyphIgo.py list -e ebook.epub -s -u -o test_ebook.epub
+$ ./glyphIgo.py list -e ebook.epub -s -u -o test_ebook.epub
 
 [INFO] Characters in 'ebook.epub':
 ' '	32	0x20	SPACE	220917
@@ -551,7 +551,7 @@ $ python glyphIgo.py list -e ebook.epub -s -u -o test_ebook.epub
 ## Check whether all the characters in `ebook.epub` can be displayed by `font.otf`
 
 ```
-$ python glyphIgo.py check -f font.otf -e ebook.epub
+$ ./glyphIgo.py check -f font.otf -e ebook.epub
 
 [INFO] Font 'font.otf' contains all the glyphs for displaying ebook 'ebook.epub'
 ```
@@ -561,7 +561,7 @@ $ python glyphIgo.py check -f font.otf -e ebook.epub
 ## Check whether all the characters in `ebook2.epub` can be displayed by `font.ttf`
 
 ```
-$ python glyphIgo.py check -f font.ttf -e ebook2.epub
+$ ./glyphIgo.py check -f font.ttf -e ebook2.epub
 
 [INFO] Font 'font.ttf' misses the following glyphs for displaying ebook 'ebook2.epub':
 'Ā'     256     0x100   LATIN CAPITAL LETTER A WITH MACRON      42
@@ -594,7 +594,7 @@ $ python glyphIgo.py check -f font.ttf -e ebook2.epub
 ## As in the previous example, but sort missing characters (if any) by their count (in `ebook2.epub`) instead of by Unicode codepoint
 
 ```
-$ python glyphIgo.py check -f font.ttf -e ebook2.epub -s
+$ ./glyphIgo.py check -f font.ttf -e ebook2.epub -s
 
 [INFO] Font 'font.ttf' misses the following glyphs for displaying ebook 'ebook2.epub':
 'ā'     257     0x101   LATIN SMALL LETTER A WITH MACRON        2510
@@ -627,7 +627,7 @@ $ python glyphIgo.py check -f font.ttf -e ebook2.epub -s
 ## As in the previous example, but also generate an EPUB files listing the missing characters (`missing.epub`)
 
 ```
-$ python glyphIgo.py check -f font.ttf -e ebook2.epub -s -u -o missing.epub
+$ ./glyphIgo.py check -f font.ttf -e ebook2.epub -s -u -o missing.epub
 
 [INFO] Font 'font.ttf' misses the following glyphs for displaying ebook 'ebook2.epub':
 'ā'     257     0x101   LATIN SMALL LETTER A WITH MACRON        2510
@@ -661,7 +661,7 @@ $ python glyphIgo.py check -f font.ttf -e ebook2.epub -s -u -o missing.epub
 ## Subset `font.otf` into `minimized.otf` by copying only the glyphs that appear in `ebook.epub`
 
 ```
-$ python glyphIgo.py subset -f font.otf -e ebook.epub -o minimized.otf
+$ ./glyphIgo.py subset -f font.otf -e ebook.epub -o minimized.otf
 
 [INFO] Subsetting font 'font.otf' with ebook 'ebook.epub' into new font 'minimized.otf', containing the following glyphs:
 ' '	32	0x20	SPACE
@@ -768,7 +768,7 @@ $ python glyphIgo.py subset -f font.otf -e ebook.epub -o minimized.otf
 ## Convert `font.ttf` (TTF) into `new.font.otf` (OTF)
 
 ```
-$ python glyphIgo.py convert -f font.ttf -o new.font.otf
+$ ./glyphIgo.py convert -f font.ttf -o new.font.otf
 
 [INFO] Converted font 'font.ttf' into font 'new.font.otf'.
 ```
@@ -778,7 +778,7 @@ $ python glyphIgo.py convert -f font.ttf -o new.font.otf
 ## Print the list of characters in `page.xhtml`, sorted by their count
 
 ```
-$ python glyphIgo.py list -p page.xhtml -s
+$ ./glyphIgo.py list -p page.xhtml -s
 
 [INFO] Characters in 'page.xhtml':
 ' '	32	0x20	SPACE	224
@@ -869,7 +869,7 @@ $ python glyphIgo.py list -p page.xhtml -s
 ## As in the previous example, but preserve X(HT)ML tags instead of stripping them away
 
 ```
-$ python glyphIgo.py list -p page.xhtml -s --preserve
+$ ./glyphIgo.py list -p page.xhtml -s --preserve
 
 [INFO] Characters in 'page.xhtml':
 ' '	32	0x20	SPACE	530
@@ -967,7 +967,7 @@ $ python glyphIgo.py list -p page.xhtml -s --preserve
 ## Count the number of characters in `ebook.epub`
 
 ```
-$ python glyphIgo.py count -e ebook.epub
+$ ./glyphIgo.py count -e ebook.epub
 
 [INFO] Number of characters in 'ebook.epub':
 1310570
@@ -978,7 +978,7 @@ $ python glyphIgo.py count -e ebook.epub
 ## Lookup for Unicode character `INTERROBANG`
 
 ```
-$ python glyphIgo.py lookup -c "INTERROBANG"
+$ ./glyphIgo.py lookup -c "INTERROBANG"
 
 [INFO] Matches found for 'INTERROBANG':
 Name          INTERROBANG
@@ -1000,7 +1000,7 @@ NFD           ‽
 ## Heuristic lookup for Unicode character `INTERROBANG`
 
 ```
-$ python glyphIgo.py lookup -c "INTERROBANG" --heuristic
+$ ./glyphIgo.py lookup -c "INTERROBANG" --heuristic
 
 [INFO] Matches found for 'INTERROBANG':
 Name          INTERROBANG
@@ -1034,7 +1034,7 @@ NFD           ⸘
 ## Lookup for Unicode character `LATIN CAPITAL LETTER A WITH MACRON`
 
 ```
-$ python glyphIgo.py lookup -c "LATIN CAPITAL LETTER A WITH MACRON"
+$ ./glyphIgo.py lookup -c "LATIN CAPITAL LETTER A WITH MACRON"
 
 [INFO] Matches found for 'LATIN CAPITAL LETTER A WITH MACRON':
 Name          LATIN CAPITAL LETTER A WITH MACRON
@@ -1056,7 +1056,7 @@ NFD           Ā
 ## Lookup for Unicode character `a`
 
 ```
-$ python glyphIgo.py lookup -c a
+$ ./glyphIgo.py lookup -c a
 
 [INFO] Matches found for 'a':
 Name          LATIN SMALL LETTER A
@@ -1078,7 +1078,7 @@ NFD           a
 ## Lookup for Unicode character whose codepoint is 97 (decimal)
 
 ```
-$ python glyphIgo.py lookup -c 97
+$ ./glyphIgo.py lookup -c 97
 
 [INFO] Matches found for '97':
 Name          LATIN SMALL LETTER A
@@ -1100,7 +1100,7 @@ NFD           a
 ## Lookup for Unicode character whose codepoint is 61 (hexadecimal)
 
 ```
-$ python glyphIgo.py lookup -c 0x61
+$ ./glyphIgo.py lookup -c 0x61
 
 [INFO] Matches found for '0x61':
 Name          LATIN SMALL LETTER A
@@ -1123,7 +1123,7 @@ NFD           a
 ## Heuristic lookup for Greek omega letters with oxia
 
 ```
-$ python glyphIgo.py lookup -c "GREEK OMEGA OXIA" --heuristic
+$ ./glyphIgo.py lookup -c "GREEK OMEGA OXIA" --heuristic
 
 [INFO] Matches found for 'GREEK OMEGA OXIA':
 Name          GREEK SMALL LETTER OMEGA WITH PSILI AND OXIA
@@ -1265,7 +1265,7 @@ NFD           Ώ
 ## Lookup Unicode character `RAIN` and print compact output
 
 ```
-$ python glyphIgo.py lookup -c "RAIN" --compact
+$ ./glyphIgo.py lookup -c "RAIN" --compact
 
 [INFO] Matches found for 'RAIN':
 ⛆       RAIN (U+26C6)
@@ -1276,7 +1276,7 @@ $ python glyphIgo.py lookup -c "RAIN" --compact
 ## Lookup Unicode characters whose names contain `RAIN` and print compact output
 
 ```
-$ python glyphIgo.py lookup -c "RAIN" --compact --heuristic
+$ ./glyphIgo.py lookup -c "RAIN" --compact --heuristic
 
 [INFO] Matches found for 'RAIN':
 ☔       UMBRELLA WITH RAIN DROPS (U+2614)
@@ -1291,7 +1291,7 @@ $ python glyphIgo.py lookup -c "RAIN" --compact --heuristic
 ## (De)obfuscate font `font.otf` with the given ID into `obf.font.otf`, using the IDPF algorithm
 
 ```
-$ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf
+$ ./glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf
 
 [INFO] (De)obfuscated font 'font.otf' into 'obf.font.otf' using id 'urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd' and IDPF algorithm.
 ```
@@ -1301,7 +1301,7 @@ $ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-
 ## As above, but use Adobe algorithm
 
 ```
-$ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf --adobe
+$ ./glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf --adobe
 
 [INFO] (De)obfuscated font 'font.otf' into 'obf.font.otf' using id 'urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd' and Adobe algorithm.
 ```
@@ -1311,7 +1311,7 @@ $ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-
 ## List the range and name of all Unicode blocks
 
 ```
-$ python glyphIgo.py list --blocks
+$ ./glyphIgo.py list --blocks
 
 [INFO] Unicode Blocks
 [INFO] Range    Start   Stop    Start   Stop    Name
@@ -1574,7 +1574,7 @@ $ python glyphIgo.py list --blocks
 ## List the characters in the Cyrillic range 
 
 ```
-$ python glyphIgo.py list -r "Cyrillic"
+$ ./glyphIgo.py list -r "Cyrillic"
 
 [INFO] Characters in range 'Cyrillic':
 'Ѐ'	1024	0x400	CYRILLIC CAPITAL LETTER IE WITH GRAVE	1
@@ -1839,7 +1839,7 @@ $ python glyphIgo.py list -r "Cyrillic"
 ## List the characters in the 0x120-0x127 (hexadecimal) range 
 
 ```
-$ python glyphIgo.py list -r 0x120-0x127
+$ ./glyphIgo.py list -r 0x120-0x127
 
 [INFO] Characters in range '0x120-0x127':
 'Ġ'	288	0x120	LATIN CAPITAL LETTER G WITH DOT ABOVE	1
@@ -1857,7 +1857,7 @@ $ python glyphIgo.py list -r 0x120-0x127
 ## List the characters in the 120-127 (decimal) range 
 
 ```
-$ python glyphIgo.py list -r 120-127
+$ ./glyphIgo.py list -r 120-127
 
 [INFO] Characters in range '120-127':
 'x'	120	0x78	LATIN SMALL LETTER X	1

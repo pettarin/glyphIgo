@@ -26,7 +26,7 @@ as an EPUB file for quick testing on an eReader.
 ## Usage
 
 ```
-$ python glyphIgo.py check|convert|count|list|lookup|obfuscate|subset [options]
+$ ./glyphIgo.py check|convert|count|list|lookup|obfuscate|subset [options]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -82,74 +82,74 @@ exit codes:
 
 ```
    1. Print this usage message
-      $ python glyphIgo.py -h
+      $ ./glyphIgo.py -h
 
    2. Check whether all the characters in ebook.epub can be displayed by font.ttf
-      $ python glyphIgo.py check -f font.ttf -e ebook.epub
+      $ ./glyphIgo.py check -f font.ttf -e ebook.epub
 
    3. As above, but use font_glyph_list.txt containing a list of decimal codepoints for the font glyphs
-      $ python glyphIgo.py check -g font_glyph_list.txt -e ebook.epub
+      $ ./glyphIgo.py check -g font_glyph_list.txt -e ebook.epub
 
    4. As above, but sort missing characters (if any) by their count (in ebook.epub) instead of by Unicode codepoint
-      $ python glyphIgo.py check -f font.ttf -e ebook.epub -s
+      $ ./glyphIgo.py check -f font.ttf -e ebook.epub -s
 
    5. As above, but also create missing.epub containing the list of missing Unicode characters
-      $ python glyphIgo.py check -f font.ttf -e ebook.epub -u -o missing.epub
+      $ ./glyphIgo.py check -f font.ttf -e ebook.epub -u -o missing.epub
 
    6. Convert font.ttf (TTF) into font.otf (OTF)
-      $ python glyphIgo.py convert -f font.ttf -o font.otf
+      $ ./glyphIgo.py convert -f font.ttf -o font.otf
 
    7. Count the number of characters in ebook.epub
-      $ python glyphIgo.py count -e ebook.epub
+      $ ./glyphIgo.py count -e ebook.epub
 
    8. As above, but preserve tags
-      $ python glyphIgo.py count -e ebook.epub --preserve
+      $ ./glyphIgo.py count -e ebook.epub --preserve
 
    9. Print the list of glyphs in font.ttf
-      $ python glyphIgo.py list -f font.ttf
+      $ ./glyphIgo.py list -f font.ttf
 
   10. As above, but just output the decimal codepoints
-      $ python glyphIgo.py list -f font.ttf -q
+      $ ./glyphIgo.py list -f font.ttf -q
 
   11. Print the list of characters in ebook.epub
-      $ python glyphIgo.py list -e ebook.epub
+      $ ./glyphIgo.py list -e ebook.epub
 
   12. As above, but also create list.epub containing the list of Unicode characters
-      $ python glyphIgo.py list -e ebook.epub -u -o list.epub
+      $ ./glyphIgo.py list -e ebook.epub -u -o list.epub
 
   13. Print the list of characters in page.xhtml
-      $ python glyphIgo.py list -p page.xhtml
+      $ ./glyphIgo.py list -p page.xhtml
 
   14. Print the list of characters in the range 0x2200-0x22ff (Mathematical Operators)
-      $ python glyphIgo.py list -r 0x2200-0x22ff
-      $ python glyphIgo.py list -r "Mathematical Operators"
+      $ ./glyphIgo.py list -r 0x2200-0x22ff
+      $ ./glyphIgo.py list -r "Mathematical Operators"
 
   15. Print the range and name of Unicode blocks
-      $ python glyphIgo.py list --blocks
+      $ ./glyphIgo.py list --blocks
 
   16. Lookup for information for Unicode character
-      $ python glyphIgo.py lookup -c 8253
-      $ python glyphIgo.py lookup -c 0x203d
-      $ python glyphIgo.py lookup -c ‽
-      $ python glyphIgo.py lookup -c "INTERROBANG"
+      $ ./glyphIgo.py lookup -c 8253
+      $ ./glyphIgo.py lookup -c 0x203d
+      $ ./glyphIgo.py lookup -c ‽
+      $ ./glyphIgo.py lookup -c "INTERROBANG"
 
   17. As above, but print compact output
-      $ python glyphIgo.py lookup --compact -c 8253
-      $ python glyphIgo.py lookup --compact -c 0x203d
-      $ python glyphIgo.py lookup --compact -c ‽
-      $ python glyphIgo.py lookup --compact -c "INTERROBANG"
+      $ ./glyphIgo.py lookup --compact -c 8253
+      $ ./glyphIgo.py lookup --compact -c 0x203d
+      $ ./glyphIgo.py lookup --compact -c ‽
+      $ ./glyphIgo.py lookup --compact -c "INTERROBANG"
 
   18. Heuristic lookup for information for Unicode characters which are Greek omega letters with oxia
-      $ python glyphIgo.py lookup --heuristic -c "GREEK OMEGA OXIA"
+      $ ./glyphIgo.py lookup --heuristic -c "GREEK OMEGA OXIA"
 
   19. (De)obfuscate font.otf into obf.font.otf using the given id and the IDPF algorithm
-      $ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf
+      $ ./glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf
 
   20. As above, but use Adobe algorithm
-      $ python glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf --adobe
+      $ ./glyphIgo.py obfuscate -f font.otf -i "urn:uuid:9a0ca9ab-9e33-4181-b2a3-e7f2ceb8e9bd" -o obf.font.otf --adobe
 
   21. Subset font.ttf into min.font.otf by copying only the glyphs appearing in ebook.epub
-      $ python glyphIgo.py subset -f font.ttf -e ebook.epub -o min.font.otf
+      $ ./glyphIgo.py subset -f font.ttf -e ebook.epub -o min.font.otf
 ```
 
 Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
@@ -160,6 +160,13 @@ Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
 **glyphIgo** is released under the MIT License since version 2.0.0 (2014-03-07).
 
 Previous versions, hosted in a Google Code repo, were released under the GNU GPL 3 License.
+
+
+## Autocompletion
+
+**glyphIgo** uses `argcomplete` for autocompleting options/filenames.
+Please refer to the [`argcomplete` documentation](https://argcomplete.readthedocs.org/en/latest/)
+for directions on how to enable it.
 
 
 ## Technical Notes
