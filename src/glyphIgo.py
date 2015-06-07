@@ -4,14 +4,15 @@
 
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
-__copyright__   = '2012-2014 Alberto Pettarin (alberto@albertopettarin.it)'
-__version__     = 'v3.0.2'
-__date__        = '2014-10-19'
+__copyright__   = '2012-2015 Alberto Pettarin (alberto@albertopettarin.it)'
+__version__     = 'v3.0.3'
+__date__        = '2015-06-07'
 __description__ = 'glyphIgo is a Swiss Army knife for dealing with fonts and EPUB eBooks'
 
 
 ### BEGIN changelog ###
 #
+# 3.0.3 2015-06-07 Added option to remove the char set while subsetting a font
 # 3.0.2 2014-10-19 Support for bash/zsh autocompletion via argcomplete
 # 3.0.1 2014-10-08 Better hex/dec char lookup, added range option to list command
 # 3.0.0 2014-07-31 Heavy code refactoring, switched to argparse, changed CLI names
@@ -181,6 +182,10 @@ class CustomParser:
             "cmd": ["subset -f font.ttf -e ebook.epub -o min.font.otf"]
         },
         {
+            "msg": "Subset font.ttf into rem.font.ttf by removing the glyphs appearing in list.txt",
+            "cmd": ["subset -f font.ttf -p list.txt -o rem.font.ttf --exclude"]
+        },
+        {
             "msg": "",
             "cmd": [""]
         }
@@ -321,6 +326,12 @@ class CustomParser:
             "short": None,
             "long": "--exact",
             "help": "use exact Unicode lookup (default)",
+            "action": "store_true"
+        },
+        {
+            "short": None,
+            "long": "--exclude",
+            "help": "exclude the characters in EBOOK or PLAIN from the output",
             "action": "store_true"
         },
         {
@@ -1139,8 +1150,6 @@ class GlyphIgo:
         generator.createEPUB(dec_codepoint_list, epub_title, epub_file_name)
         self.__print_info("Created EPUB file '%s'." % (epub_file_name))
 
-
-
     def __do_check(self):
         font_char_list = []
         ebook_char_list = []
@@ -1283,14 +1292,18 @@ class GlyphIgo:
                 if (c[0] in font_char_list):
                     font.selection.select(("more", "unicode"), ord(c[0]))
                     found_char_list.append(c[0])
-            font.selection.invert()
+            if (not ("exclude" in self.__args)):
+                font.selection.invert()
             font.clear()
             output_font_file = self.__get_name_output_file(self.__args.font, prefix="subset_")
             font.generate(output_font_file)
         except Exception as e:
             self.__print_error(str(e))
             return CustomParser.EXIT_CODE_COMMAND_FAILED
-        self.__print_info("Subsetting font '%s' with ebook '%s' into new font '%s', containing the following glyphs:" % (font_name, ebook_name, output_font_file))
+        if ("exclude" in self.__args):
+            self.__print_info("Subsetting font '%s' with ebook '%s' into new font '%s', not containing the following glyphs:" % (font_name, ebook_name, output_font_file))
+        else:
+            self.__print_info("Subsetting font '%s' with ebook '%s' into new font '%s', containing the following glyphs:" % (font_name, ebook_name, output_font_file))
         self.__print_char_list(found_char_list)
         return CustomParser.EXIT_CODE_OK
 
@@ -1326,7 +1339,7 @@ class GlyphIgo:
 def main():
     # read command line parameters
     args = CustomParser().get_arguments()
-    
+   
     # run glyphIgo
     returnCode = GlyphIgo(args).execute()
     
@@ -1335,8 +1348,8 @@ def main():
 
 if (__name__ == '__main__'):
     # force UTF-8 encoding
-    reload(sys)
-    sys.setdefaultencoding("utf-8")
+    #reload(sys)
+    #sys.setdefaultencoding("utf-8")
     main()
 
 

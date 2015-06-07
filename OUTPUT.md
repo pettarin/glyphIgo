@@ -765,6 +765,26 @@ $ ./glyphIgo.py subset -f font.otf -e ebook.epub -o minimized.otf
 
 
 
+## Subset `font.ttf` into `minimized.ttf` by removing the glyphs that appear in `list.txt`
+
+```
+$ ./glyphIgo.py subset -f font.ttf -p list.txt -o minimized.ttf --exclude
+
+[INFO] Subsetting font 'font.ttf' with ebook 'list.txt' into new font 'minimized.ttf', not containing the following glyphs:
+'0'     48      0x30    DIGIT ZERO
+'1'     49      0x31    DIGIT ONE
+'2'     50      0x32    DIGIT TWO
+'3'     51      0x33    DIGIT THREE
+'4'     52      0x34    DIGIT FOUR
+'5'     53      0x35    DIGIT FIVE
+'6'     54      0x36    DIGIT SIX
+'7'     55      0x37    DIGIT SEVEN
+'8'     56      0x38    DIGIT EIGHT
+'9'     57      0x39    DIGIT NINE
+```
+
+
+
 ## Convert `font.ttf` (TTF) into `new.font.otf` (OTF)
 
 ```

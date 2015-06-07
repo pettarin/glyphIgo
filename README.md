@@ -2,8 +2,8 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 3.0.2
-* Date: 2014-10-19
+* Version: 3.0.3
+* Date: 2015-06-07
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
 * License: the MIT License (MIT), see LICENSE.md
 
@@ -65,6 +65,8 @@ optional arguments:
   --compact             compact lookup output (Unicode character, name, and
                         codepoint only)
   --exact               use exact Unicode lookup (default)
+  --exclude             exclude the characters in EBOOK or PLAIN from the
+                        output
   --full                full lookup output (default)
   --heuristic           use heuristic Unicode lookup
   --idpf                use IDPF obfuscation algorithm (default)
@@ -150,6 +152,9 @@ exit codes:
 
   21. Subset font.ttf into min.font.otf by copying only the glyphs appearing in ebook.epub
       $ ./glyphIgo.py subset -f font.ttf -e ebook.epub -o min.font.otf
+
+  22. Subset font.ttf into rem.font.ttf by removing the glyphs appearing in list.txt
+      $ glyphIgo.py subset -f font.ttf -p list.txt -o rem.font.ttf --exclude
 ```
 
 Please see [OUTPUT.md](OUTPUT.md) for usage examples with their actual output.
