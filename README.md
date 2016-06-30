@@ -21,7 +21,11 @@ Optionally, you can export a list of Unicode glyphs/characters,
 produced by the above commands,
 as an EPUB file for quick testing on an eReader. 
 
+## IMPORTANT NOTICE
 
+*2016-06-30* I planned to deeply restructure glyphIgo during the 2016 summer.
+In particular, to update it to use the new fontforge and fonttools libraries,
+and to add better documentation. Thank you for your patience.
 
 ## Usage
 
@@ -176,11 +180,10 @@ for directions on how to enable it.
 
 ## Technical Notes
 
-**glyphIgo** requires Python 2.7 (or later Python 2.x), and Python modules:
+**glyphIgo** requires Python 2.7 (or later Python 2.x), and Python module `fontforge`.
 
-* `python-fontforge`,
-* `python-htmlentitydefs`, and
-* `python-unicodedata`.
+On Ubuntu/Debian, you can install the `python-fontforge` package: `apt-get install python-fontforge`.
+On other OSes... I do not know, I use it on Debian only. Feel free to let me know, I will add your installation notes here.
 
 For the sake of speed and code clarity, the given EPUB is not "fully parsed".
 In particular:
@@ -223,6 +226,4 @@ Instead, the name comes from `glyph` and `figo` (Italian slang for `cool`).
 ### Why did you code glyphIgo?
 
 I needed to perform the "font checking" on nearly 100,000 EPUB files at once, for a large project. Then, I felt bad having this little piece of code sitting idly, so I decided to publish it on Google Code. In March 2014, I moved it to GitHub.
-
-[![Analytics](https://ga-beacon.appspot.com/UA-52776738-1/glyphIgo)](http://www.albertopettarin.it)
 
