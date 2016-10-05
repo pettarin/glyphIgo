@@ -27,6 +27,19 @@ as an EPUB file for quick testing on an eReader.
 In particular, to update it to use the new fontforge and fonttools libraries,
 and to add better documentation. Thank you for your patience.
 
+*2016-10-05* ... and of course I have not had time to work on glyphIgo,
+since my plans for the 2016 summer went out of the window.
+However, I have some more time now (October 2016),
+and I would like to address the following issues:
+
+1. use `fonttools` instead of `fontforge` as the core font library;
+2. restructure the code as a library, usable in third-party code;
+3. fix the command line parsing (`argcomplete` is problematic);
+4. release on PyPI;
+5. better documentation.
+
+Stay tuned (and/or have a look at the `v4` branch)!
+
 ## Usage
 
 ```
