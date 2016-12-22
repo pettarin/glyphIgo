@@ -19,7 +19,7 @@ There are seven main usage scenarios:
 
 Optionally, you can export a list of Unicode glyphs/characters,
 produced by the above commands,
-as an EPUB file for quick testing on an eReader. 
+as an EPUB file for quick testing on an eReader.
 
 ## IMPORTANT NOTICE
 
@@ -39,6 +39,10 @@ and I would like to address the following issues:
 5. better documentation.
 
 Stay tuned (and/or have a look at the `v4` branch)!
+
+*2016-12-22* ... and of course I have not worked on glyphIgo.
+I am sorry about that.
+I am not sure when I will have the time for it.
 
 ## Usage
 
@@ -219,7 +223,7 @@ Unfortunately, there is no `python-fontforge` module for Python 3 in the stable 
 To use `-u` or `--epub` switch, you also need to download `genEPUB.py` and put it into the same directory of `glyphIgo.py`.
 
 
-## Limitations and Missing Features 
+## Limitations and Missing Features
 
 * Support for Unicode modifiers
 * Full EPUB parsing
