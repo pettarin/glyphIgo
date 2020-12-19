@@ -1020,7 +1020,7 @@ class GlyphIgo:
                 k = k.replace(u"urn:uuid:", "")
                 k = k.replace(u"-", "")
                 k = k.replace(u":", "")
-                d = k 
+                d = k.decode("hex")
             return str(d)
  
         f = open(self.__args.font, 'rb')
