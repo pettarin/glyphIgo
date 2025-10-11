@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __license__     = 'MIT'
 __author__      = 'Alberto Pettarin (alberto@albertopettarin.it)'
@@ -253,10 +253,10 @@ class genEPUB:
                 sOUT += "     <td class=\"hex\">%s</td>\n" % (str(hex(c)))
                 sOUT += "     <td class=\"nam\">%s</td>\n" % (self.CONTROL_CHARATERS[c])
             else:
-                sOUT += "     <td class=\"sym\">%s</td>\n" % (self.escape(unichr(c)))
+                sOUT += "     <td class=\"sym\">%s</td>\n" % (self.escape(chr(c)))
                 sOUT += "     <td class=\"dec\">%s</td>\n" % (str(c))
                 sOUT += "     <td class=\"hex\">%s</td>\n" % (str(hex(c)))
-                sOUT += "     <td class=\"nam\">%s</td>\n" % (unicodedata.name(unichr(c), "UNKNOWN NAME"))
+                sOUT += "     <td class=\"nam\">%s</td>\n" % (unicodedata.name(chr(c), "UNKNOWN NAME"))
             
             sOUT += "    </tr>\n"
         sOUT += "   </table>\n"
@@ -266,7 +266,7 @@ class genEPUB:
 
         sOUT = sOUT.encode("utf-8")
 
-        fileOUT = open(os.path.join(tmpDir, "index.xhtml"), 'w')
+        fileOUT = open(os.path.join(tmpDir, "index.xhtml"), 'wb')
         fileOUT.write(sOUT)
         fileOUT.close()
     ### END outputIndexPage ###
@@ -312,8 +312,8 @@ class genEPUB:
         sOUT += "</ncx>"
              
         sOUT = sOUT.encode("utf-8")
-        
-        fileOUT = open(os.path.join(tmpDir, "toc.ncx"), 'w')
+
+        fileOUT = open(os.path.join(tmpDir, "toc.ncx"), 'wb')
         fileOUT.write(sOUT)
         fileOUT.close()
     ### END createTOC ###
@@ -347,7 +347,7 @@ class genEPUB:
 
         sOUT = sOUT.encode("utf-8")
 
-        fileOUT = open(os.path.join(tmpDir, "content.opf"), 'w')
+        fileOUT = open(os.path.join(tmpDir, "content.opf"), 'wb')
         fileOUT.write(sOUT)
         fileOUT.close()
     ### END outputOpf ###

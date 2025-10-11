@@ -2,10 +2,10 @@
 
 **glyphIgo** is a Swiss Army knife for dealing with fonts and EPUB eBooks
 
-* Version: 3.0.3
-* Date: 2015-06-07
+* Version: 4.0.0
+* Date: 2025-10-11
 * Developer: [Alberto Pettarin](http://www.albertopettarin.it/) ([contact](http://www.albertopettarin.it/contact.html))
-* License: the MIT License (MIT), see LICENSE.md
+* License: the MIT License (MIT), see [LICENSE.md](LICENSE.md)
 
 There are seven main usage scenarios:
 
@@ -22,6 +22,8 @@ produced by the above commands,
 as an EPUB file for quick testing on an eReader.
 
 ## IMPORTANT NOTICE
+
+*2025-10-11* I am using this project to test the capabilities of Claude Code.
 
 *2016-06-30* I planned to deeply restructure glyphIgo during the 2016 summer.
 In particular, to update it to use the new fontforge and fonttools libraries,
@@ -197,9 +199,9 @@ for directions on how to enable it.
 
 ## Technical Notes
 
-**glyphIgo** requires Python 2.7 (or later Python 2.x), and Python module `fontforge`.
+**glyphIgo** requires Python 3.x, and Python module `fontforge`.
 
-On Ubuntu/Debian, you can install the `python-fontforge` package: `apt-get install python-fontforge`.
+On Ubuntu/Debian, you can install the `python-fontforge` package: `apt-get install python3-fontforge`.
 On other OSes... I do not know, I use it on Debian only. Feel free to let me know, I will add your installation notes here.
 
 For the sake of speed and code clarity, the given EPUB is not "fully parsed".
@@ -217,8 +219,6 @@ You can change the encoding used while decoding plain text files
 by specifying the `-d` (or `--decode`) parameter.
 
 Conversion from entity (named or not) to Unicode codepoint is supported.
-
-Unfortunately, there is no `python-fontforge` module for Python 3 in the stable Debian repo (as of 2014-03-07), so you must use Python 2.7 (or later Python 2.x) to run **glyphIgo**.
 
 To use `-u` or `--epub` switch, you also need to download `genEPUB.py` and put it into the same directory of `glyphIgo.py`.
 
@@ -242,5 +242,7 @@ Instead, the name comes from `glyph` and `figo` (Italian slang for `cool`).
 
 ### Why did you code glyphIgo?
 
-I needed to perform the "font checking" on nearly 100,000 EPUB files at once, for a large project. Then, I felt bad having this little piece of code sitting idly, so I decided to publish it on Google Code. In March 2014, I moved it to GitHub.
+I needed to perform the "font checking" on nearly 100,000 EPUB files at once, for a large project.
+Then, I felt bad having this little piece of code sitting idly, so I decided to publish it on Google Code.
+In March 2014, I moved it to GitHub.
 
